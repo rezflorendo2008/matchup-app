@@ -1,0 +1,43 @@
+export interface User {
+  id: number; name: string; phone: string | null; email: string | null;
+  phone_verified: boolean; kyc_status: string; can_predict: boolean; is_owner: boolean;
+}
+export interface Category { id: number; name: string; slug: string; icon: string | null }
+export interface Match {
+  id: number; club_id: number; club: string; title: string; club_logo: string | null; club_verified: boolean; event_id: number | null; event: string | null; event_starts_at: string | null; category_id: number | null; category: string | null;
+  category_icon: string | null; side_a: string; side_b: string; status: 'upcoming' | 'open' | 'paused' | 'closed' | 'settled';
+  predictions_open: boolean; scheduled_at: string | null; max_diamonds: number | null; multiplier_a: number | null; multiplier_b: number | null;
+  result: string | null; mode: 'peer' | 'club'; open_a: number | null; open_b: number | null;
+}
+export interface Prediction {
+  id: number; match_id: number; match: string; club_id: number; side: 'a' | 'b'; amount: number; matched_amount: number;
+  status: string; reward: number | null; can_edit: boolean; created_at: string;
+}
+export interface Club {
+  id: number; name: string; club_code: string; logo: string | null; club_pays: boolean; commission_pct: number; status: string;
+  membership: string | null; balance: number | null;
+}
+export interface ClubProfile extends Club {
+  tagline: string | null; can_predict: boolean;
+  stats: { club_predictions: number; members: number; matches: number; my_predictions: number; my_active: number; my_won: number; my_lost: number };
+  my_current: { id: number; match_id: number; match: string; side_name: string; amount: number; matched_amount: number; created_at: string }[];
+  current_matches: Match[]; past_matches: Match[];
+}
+export interface Promo {
+  id: number; type: 'promo' | 'ad'; title: string; subtitle: string | null; sponsor: string | null; image: string | null;
+  link_type: 'none' | 'url' | 'match' | 'club'; link_value: string | null;
+}
+export interface EventItem {
+  id: number; title: string; description: string | null; location: string | null; image: string | null;
+  starts_at: string; ends_at: string | null; category: string | null; category_icon: string | null;
+}
+export interface FeaturedClub {
+  id: number; name: string; club_code: string; tagline: string | null; logo: string | null; club_pays: boolean;
+  members: number; membership: string | null;
+}
+export interface Home { featured_clubs: FeaturedClub[]; promos: Promo[]; ads: Promo[]; events: EventItem[]; has_clubs: boolean }
+export interface WalletRow { club_id: number; club: string; balance: number }
+export interface Tx { id: number; type: string; amount: number; balance_after: number; note: string | null; created_at: string }
+export interface Req { id: number; type: 'diamonds_request'; amount: number; status: string; note: string | null; created_at: string }
+export interface SubStatus { subscribed: boolean; plan: string | null; expires_at: string | null; limit: number | null; used: number; remaining: number | null }
+export interface Plan { id: number; name: string; product_id: string; monthly_match_limit: number | null; price_label: string | null }
