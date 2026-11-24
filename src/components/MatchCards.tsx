@@ -9,6 +9,16 @@ export type OpenMatch = (m: Match, side?: 'a' | 'b') => void;
 
 const detail = (m: Match, k: 'a' | 'b') => (m.mode === 'club' ? `×${(k === 'a' ? m.multiplier_a : m.multiplier_b) ?? '-'}` : `${pts(k === 'a' ? m.open_a : m.open_b)} 💎 open`);
 
+/** "You predicted 120 💎" for this user on one match (shown on every match card). */
+export function MyPredicted({ m, style }: { m: Match; style?: any }) {
+  const v = Number(m.my_diamonds ?? 0);
+  return (
+    <Text style={[{ color: v > 0 ? colors.primarySoft : colors.dim, fontSize: 12.5, fontWeight: v > 0 ? '800' : '500' }, style]}>
+      {v > 0 ? `You predicted ${pts(v)} 💎` : 'No prediction yet'}
+    </Text>
+  );
+}
+
 /** Club line: icon, name and verified tick. */
 export function ClubLine({ m, size = 18 }: { m: Match; size?: number }) {
   return (
@@ -31,6 +41,7 @@ export function TeamPlayerCard({ m, k, onOpen, compact }: { m: Match; k: 'a' | '
       backgroundColor: won ? colors.success + '1A' : colors.bg2, borderWidth: won ? 1.5 : 1, borderColor: won ? colors.success : colors.line,
     }}>
       <TeamAvatar name={name} color={col} size={compact ? 38 : 46} />
+      {m.has_score && (m.score_a != null || m.score_b != null) ? <Text style={{ color: colors.text, fontSize: compact ? 24 : 30, fontWeight: '800', marginTop: 6, letterSpacing: -0.5 }}>{(k === 'a' ? m.score_a : m.score_b) ?? 0}</Text> : null}
       <Text style={{ color: colors.text, fontWeight: '700', fontSize: 14, marginTop: 8, textAlign: 'center' }} numberOfLines={2}>{name}</Text>
       <Text style={{ color: won ? colors.success : col, fontSize: 12, fontWeight: '700', marginTop: 2, textAlign: 'center' }}>{won ? '🏆 Won' : detail(m, k)}</Text>
     </PressScale>
@@ -56,6 +67,7 @@ export function LiveMatchCard({ m, onOpen }: { m: Match; onOpen: OpenMatch }) {
         <View style={{ width: 34, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: colors.dim, fontWeight: '800', fontSize: 12 }}>VS</Text></View>
         <TeamPlayerCard m={m} k="b" onOpen={onOpen} />
       </Row>
+      <MyPredicted m={m} style={{ marginTop: 10, textAlign: 'center' }} />
       <Button title={m.status === 'open' ? 'View match & predict' : 'View match'} onPress={() => onOpen(m)} small style={{ marginTop: 14 }} />
     </View>
   );
@@ -72,7 +84,7 @@ export function UpcomingMatchCard({ m, onOpen }: { m: Match; onOpen: OpenMatch }
       <Row style={{ marginTop: 10 }}>
         <TeamAvatar name={m.side_a} size={32} color={colors.primary} />
         <View style={{ flex: 1, marginHorizontal: 10 }}>
-          <Text style={{ color: colors.text, fontWeight: '700', fontSize: 15 }} numberOfLines={1}>{m.side_a} <Text style={{ color: colors.dim, fontWeight: '600' }}>vs</Text> {m.side_b}</Text>
+          <Text style={{ color: colors.text, fontWeight: '700', fontSize: 15 }} numberOfLines={1}>{m.side_a} <Text style={{ color: colors.primarySoft, fontWeight: '800', fontSize: 12 }}>VS</Text> {m.side_b}</Text>
           <Text style={{ color: colors.dim, fontSize: 12, marginTop: 2 }} numberOfLines={1}>{m.title}</Text>
         </View>
         <TeamAvatar name={m.side_b} size={32} color={colors.warning} />
@@ -85,6 +97,7 @@ export function UpcomingMatchCard({ m, onOpen }: { m: Match; onOpen: OpenMatch }
         <ClubLine m={m} size={16} />
         <ChevronRightIcon size={16} color={colors.dim} />
       </Row>
+      <MyPredicted m={m} style={{ marginTop: 8 }} />
     </PressScale>
   );
 }
