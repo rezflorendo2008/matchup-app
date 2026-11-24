@@ -73,8 +73,8 @@ export default function HomeScreen({ navigation }: any) {
                 </Row>
                 <Row style={{ marginTop: 6 }}>
                   {won ? <ArrowUpIcon /> : lost ? <ArrowDownIcon /> : <HistoryIcon size={16} />}
-                  <T style={{ marginLeft: 6, fontWeight: '700', color: won ? c.good : lost ? c.bad : c.dim }}>
-                    {won ? `+${pts(b.reward)} 💎 won` : lost ? `−${pts(b.matched_amount)} 💎` : `${pts(b.reward)} 💎 returned`}
+                  <T style={{ marginLeft: 6, fontWeight: '700', color: won ? c.good : c.dim }}>
+                    {won ? `+${pts(b.reward)} 💎 won` : lost ? `Lost · ${pts(b.matched_amount)} 💎 used` : `${pts(b.reward)} 💎 returned`}
                   </T>
                 </Row>
               </Card>

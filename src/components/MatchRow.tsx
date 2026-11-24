@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { MatchStatusBadge, Row, whenShort } from '../ui';
-import { TeamPlayerCard, type OpenMatch } from './MatchCards';
+import { MyPredicted, TeamPlayerCard, type OpenMatch } from './MatchCards';
 import { colors } from '../theme';
 import type { Match } from '../types';
 
@@ -20,9 +20,10 @@ export function MatchRow({ m, onOpen }: { m: Match; onOpen: OpenMatch }) {
       </Pressable>
       <Row style={{ marginTop: 10, alignItems: 'stretch' }}>
         <TeamPlayerCard m={m} k="a" onOpen={onOpen} compact />
-        <View style={{ width: 10 }} />
+        <View style={{ width: 34, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: colors.dim, fontWeight: '800', fontSize: 12 }}>VS</Text></View>
         <TeamPlayerCard m={m} k="b" onOpen={onOpen} compact />
       </Row>
+      <MyPredicted m={m} style={{ marginTop: 8 }} />
       {m.status === 'settled' && m.result && m.result !== 'a' && m.result !== 'b' ? <Text style={{ color: colors.dim, fontSize: 12.5, marginTop: 6 }}>Result: {m.result}</Text> : null}
     </View>
   );

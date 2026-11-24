@@ -85,10 +85,11 @@ export default function DiamondsScreen({ navigation }: any) {
                       <View style={{ flex: 1 }}>
                         <T style={{ fontWeight: '700' }}>{LABEL[t.type] ?? t.type.replace(/_/g, ' ')}</T>
                         {t.note ? <Dim numberOfLines={2}>{t.note}</Dim> : null}
+                        {t.type === 'lost' ? <Dim>Diamonds were used when you predicted</Dim> : null}
                         <Dim>{when(t.created_at)}</Dim>
                       </View>
                       <View style={{ alignItems: 'flex-end' }}>
-                        <T style={{ fontWeight: '800', color: n > 0 ? c.good : n < 0 ? c.bad : c.dim }}>{n > 0 ? '+' : ''}{pts(n)}</T>
+                        <T style={{ fontWeight: '800', color: n > 0 ? c.good : n < 0 ? c.bad : c.dim }}>{t.type === 'lost' ? 'No change' : `${n > 0 ? '+' : ''}${pts(n)}`}</T>
                         <Dim>bal {pts(t.balance_after)}</Dim>
                       </View>
                     </Row>

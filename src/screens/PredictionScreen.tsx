@@ -5,8 +5,11 @@ import { api, errMsg } from '../api';
 import { POLL_MS } from '../config';
 import { useAuth } from '../store';
 import { Badge, Button, Card, Chip, Dim, CardSkeleton, ErrorBox, Field, H1, H2, Loading, MatchStatusBadge, Row, Screen, T, TeamAvatar, c, pts } from '../ui';
-import { Text } from 'react-native';
+import { ScrollView, Text } from 'react-native';
 import type { Prediction, Club, Match } from '../types';
+
+type Participants = { total: number; total_a: number; total_b: number; count: number; players: number;
+  items: { id: number; name: string; side: 'a' | 'b'; amount: number; mine: boolean; status: string }[] };
 
 export default function PredictionScreen({ route, navigation }: any) {
   const id: number = route.params.id;
@@ -21,6 +24,9 @@ export default function PredictionScreen({ route, navigation }: any) {
   const clubs = useQuery({ queryKey: ['clubs'], queryFn: () => api.get<Club[]>('/clubs') });
   const predictions = useQuery({ queryKey: ['predictions', 'match', id], queryFn: () => api.get<{ data: Prediction[] }>('/predictions'), refetchInterval: POLL_MS });
 
+  const pq = useQuery({ queryKey: ['match-participants', id], queryFn: () => api.get<Participants>(`/matches/${id}/participants`), refetchInterval: POLL_MS });
+  const pool = pq.data;
+
   const m = mq.data;
   const balance = clubs.data?.find((x) => x.id === m?.club_id)?.balance ?? 0;
   const mine = (predictions.data?.data ?? []).filter((b) => b.match_id === id && ['confirmed', 'won', 'lost', 'refunded'].includes(b.status));
@@ -28,7 +34,7 @@ export default function PredictionScreen({ route, navigation }: any) {
   const amt = Number(amount);
   const valid = !!side && amt >= 1 && (!m?.max_diamonds || amt <= Number(m.max_diamonds));
 
-  const refreshAll = () => ['predictions', 'match', 'matches', 'clubs', 'wallets', 'home'].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
+  const refreshAll = () => ['predictions', 'match', 'match-participants', 'matches', 'clubs', 'wallets', 'home'].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
   const reset = () => { setEditing(null); setSide(null); setAmount(''); setPending(null); };
 
   const place = useMutation({
@@ -70,6 +76,7 @@ export default function PredictionScreen({ route, navigation }: any) {
             <Card key={k} onPress={open ? () => setSide(k) : undefined}
               style={{ flex: 1, marginBottom: 0, alignItems: 'center', justifyContent: 'center', paddingVertical: 18, borderColor: sel ? col : c.line, borderWidth: sel ? 2 : 1, backgroundColor: sel ? col + '1A' : c.card }}>
               <TeamAvatar name={name(k) ?? ''} color={col} size={56} />
+              {m.has_score && (m.score_a != null || m.score_b != null) ? <Text style={{ color: c.text, fontWeight: '800', fontSize: 34, marginTop: 6 }}>{(k === 'a' ? m.score_a : m.score_b) ?? 0}</Text> : null}
               <Text style={{ color: c.text, fontWeight: '800', fontSize: 16, marginTop: 10, textAlign: 'center' }} numberOfLines={2}>{name(k)}</Text>
               <Text style={{ color: col, fontWeight: '700', fontSize: 13, marginTop: 4, textAlign: 'center' }}>
                 {m.mode === 'club' ? `×${k === 'a' ? m.multiplier_a ?? '-' : m.multiplier_b ?? '-'}` : `${pts(k === 'a' ? m.open_a : m.open_b)} 💎 open`}
@@ -82,6 +89,37 @@ export default function PredictionScreen({ route, navigation }: any) {
         })}
       </Row>
 
+      <Card style={{ marginTop: 12, borderColor: Number(m.my_diamonds ?? 0) > 0 ? c.brand : c.line }}>
+        <Row style={{ justifyContent: 'space-between' }}>
+          <T style={{ fontWeight: '800' }}>My total predicted</T>
+          <T style={{ fontWeight: '800', color: c.brand }}>{pts(m.my_diamonds ?? 0)} 💎</T>
+        </Row>
+      </Card>
+      <Card style={{ marginTop: 0 }}>
+        <T style={{ fontWeight: '800' }}>Who predicted what</T>
+        <Dim style={{ fontSize: 12, marginTop: 2 }}>{pool ? `${pool.players} player${pool.players === 1 ? '' : 's'} · ${pool.count} prediction${pool.count === 1 ? '' : 's'}` : 'Loading…'}</Dim>
+        <Row style={{ alignItems: 'flex-start', marginTop: 8 }}>
+          {(['a', 'b'] as const).map((k, i) => {
+            const col = k === 'a' ? c.a : c.b;
+            const list = (pool?.items ?? []).filter((p) => p.side === k);
+            return (
+              <View key={k} style={{ flex: 1, marginLeft: i ? 10 : 0 }}>
+                <Text style={{ color: col, fontSize: 12, fontWeight: '800' }} numberOfLines={1}>{k === 'a' ? m.side_a : m.side_b} ({list.length})</Text>
+                <Text style={{ color: col, fontSize: 13, fontWeight: '800', marginTop: 2 }}>{pts(k === 'a' ? pool?.total_a ?? 0 : pool?.total_b ?? 0)} 💎 total</Text>
+                <ScrollView nestedScrollEnabled style={{ maxHeight: 130, marginTop: 4, borderTopWidth: 2, borderTopColor: col }} showsVerticalScrollIndicator>
+                  {list.length === 0 ? <Dim style={{ fontSize: 11, paddingVertical: 6 }}>{pool ? 'No one yet' : 'Loading…'}</Dim> : list.map((p) => (
+                    <Row key={p.id} style={{ justifyContent: 'space-between', paddingVertical: 4 }}>
+                      <Text style={{ color: p.mine ? c.text : c.dim, fontSize: 11, fontWeight: p.mine ? '800' : '500', flex: 1, marginRight: 4 }} numberOfLines={1}>{p.name}{p.mine ? ' (you)' : ''}</Text>
+                      <Text style={{ color: col, fontSize: 11, fontWeight: '700' }}>{pts(p.amount)} 💎</Text>
+                    </Row>
+                  ))}
+                </ScrollView>
+              </View>
+            );
+          })}
+        </Row>
+      </Card>
+
       {m.status === 'settled' ? (() => {
         const won = mine.filter((b) => b.status === 'won');
         const lost = mine.filter((b) => b.status === 'lost');
@@ -91,7 +129,7 @@ export default function PredictionScreen({ route, navigation }: any) {
           <Card style={{ marginTop: 12, borderColor: won.length ? c.good : c.line }}>
             <T style={{ fontWeight: '800', fontSize: 16 }}>{winner ? `🏆 ${winner} won` : m.result === 'draw' ? 'Draw' : 'Match cancelled'}</T>
             {won.length ? <T style={{ color: c.good, marginTop: 6, fontWeight: '700' }}>🎉 You won {pts(won.reduce((a, b) => a + Number(b.reward), 0))} 💎</T> : null}
-            {lost.length && !won.length ? <T style={{ color: c.bad, marginTop: 6 }}>Your prediction did not win this time.</T> : null}
+            {lost.length && !won.length ? <T style={{ color: c.dim, marginTop: 6 }}>Your prediction did not win this time. {pts(lost.reduce((a, b) => a + Number(b.matched_amount), 0))} 💎 used.</T> : null}
             {back.length ? <T style={{ marginTop: 6 }}>↩️ {pts(back.reduce((a, b) => a + Number(b.reward), 0))} 💎 returned to you</T> : null}
             {mine.length === 0 ? <Dim style={{ marginTop: 6 }}>You had no predictions on this match.</Dim> : null}
           </Card>
@@ -120,7 +158,7 @@ export default function PredictionScreen({ route, navigation }: any) {
           <Row style={{ justifyContent: 'space-between' }}>
             <T style={{ fontWeight: '700' }}>{name(b.side)} · {pts(b.amount)}</T><Badge text={b.status} />
           </Row>
-          <Dim>Matched {pts(b.matched_amount)}{Number(b.reward) > 0 ? ` · Won ${pts(b.reward)}` : ''}</Dim>
+          <Dim>Matched {pts(b.matched_amount)}{b.status === 'won' ? ` · Won +${pts(b.reward)} 💎` : b.status === 'lost' ? ` · Lost · ${pts(b.matched_amount)} 💎 used` : ''}</Dim>
           {b.can_edit && open ? (
             <Row style={{ marginTop: 10, gap: 8 }}>
               <Button style={{ flex: 1 }} kind="ghost" title="Change" onPress={() => { setEditing(b); setSide(b.side); setAmount(String(b.amount)); }} />
