@@ -18,7 +18,7 @@ function Item({ label, focused, onPress, onLongPress, Icon }: { label: string; f
     <Pressable onPress={onPress} onLongPress={onLongPress} accessibilityRole="tab" accessibilityLabel={label} accessibilityState={{ selected: focused }} style={s.item} hitSlop={4}>
       <Animated.View style={{ alignItems: 'center', transform: [{ translateY: lift }] }}>
         <Animated.View style={[s.dot, { opacity: v }]} />
-        <Icon size={24} color={color} filled={focused} />
+        <View style={{ opacity: focused ? 1 : 0.62 }}><Icon size={24} color={color} filled={focused} /></View>
         <Text style={[s.label, { color }]}>{label}</Text>
       </Animated.View>
     </Pressable>

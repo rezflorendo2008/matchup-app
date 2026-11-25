@@ -1,6 +1,7 @@
 import React from 'react';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { colors } from './theme';
+import { DiamondGem } from './components/Brand';
 
 export interface IconProps { size?: number; color?: string; filled?: boolean }
 const base = (size: number) => ({ width: size, height: size, viewBox: '0 0 24 24', fill: 'none' as const });
@@ -23,12 +24,8 @@ export const UsersIcon = ({ size = 24, color = colors.dim, filled }: IconProps) 
     <Path d="M16 5.6a3.1 3.1 0 0 1 0 5.8M18 14.6c1.8.6 3 2.2 3 4.4" {...stroke(color)} />
   </Svg>
 );
-export const DiamondIcon = ({ size = 24, color = colors.dim, filled }: IconProps) => (
-  <Svg {...base(size)}>
-    <Path d="M7 4h10l4 5.2L12 20 3 9.2 7 4Z" {...stroke(color)} fill={filled ? color : 'none'} fillOpacity={filled ? 0.2 : 0} />
-    <Path d="M3 9.2h18M9.2 4 8 9.2 12 20l4-10.8L14.8 4" {...stroke(color)} />
-  </Svg>
-);
+/** The PickArena diamond is always the faceted brand gem; `color` and `filled` are ignored so the currency looks the same everywhere. */
+export const DiamondIcon = ({ size = 24 }: IconProps) => <DiamondGem size={size} />;
 export const UserIcon = ({ size = 24, color = colors.dim, filled }: IconProps) => (
   <Svg {...base(size)}>
     <Circle cx="12" cy="8.2" r="3.7" {...stroke(color)} fill={filled ? color : 'none'} fillOpacity={filled ? 0.18 : 0} />

@@ -1,3 +1,4 @@
+import { BrandMark, DiamondGem } from './components/Brand';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator, Animated, Easing, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TextInputProps, View, ViewStyle,
@@ -45,11 +46,9 @@ export function PressScale({ children, onPress, style, wrapStyle, disabled, scal
 
 export function Logo({ size = 30 }: { size?: number }) {
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-      <View style={{ width: size, height: size, borderRadius: size * 0.3, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', marginRight: 8 }}>
-        <DiamondIcon size={size * 0.62} color={colors.white} />
-      </View>
-      <Text style={s.brand}>Pick<Text style={{ color: colors.primarySoft }}>Arena</Text></Text>
+    <View style={{ flexDirection: 'row', alignItems: 'center' }} accessible accessibilityLabel="PickArena">
+      <BrandMark size={size * 1.25} />
+      <Text style={[s.brand, { marginLeft: 6 }]}>Pick<Text style={{ color: colors.primarySoft }}>Arena</Text></Text>
     </View>
   );
 }
@@ -61,7 +60,7 @@ export function DiamondWalletButton() {
   const total = (q.data ?? []).filter((x) => x.membership === 'approved').reduce((a, x) => a + Number(x.balance ?? 0), 0);
   return (
     <PressScale onPress={() => nav.navigate('AddDiamonds')} accessibilityLabel="Add diamonds" hitSlop={8} style={s.pill}>
-      <DiamondIcon size={16} color={colors.primarySoft} />
+      <DiamondGem size={18} />
       <Text style={s.pillText}>{pts(total)}</Text>
       <View style={s.plus}><PlusIcon size={14} color={colors.white} /></View>
     </PressScale>
