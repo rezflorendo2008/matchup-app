@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, errMsg } from '../api';
 import { buyProduct, purchasesAvailable, restorePurchases, setupPurchases } from '../purchases';
 import { useAuth } from '../store';
-import { Button, Card, Dim, ErrorBox, H1, H2, Loading, Screen, T, c } from '../ui';
+import { Button, Card, Dim, ErrorBox, H2, Loading, Screen, T, c } from '../ui';
 import type { Plan, SubStatus } from '../types';
 
 export default function SubscriptionScreen({ navigation }: any) {
@@ -32,9 +32,7 @@ export default function SubscriptionScreen({ navigation }: any) {
 
   const s = status.data;
   return (
-    <Screen>
-      <Button title="‹ Back" kind="ghost" onPress={() => navigation.goBack()} style={{ alignSelf: 'flex-start', paddingVertical: 8, paddingHorizontal: 14, marginBottom: 10 }} />
-      <H1>Owner subscription</H1>
+    <Screen title="Owner subscription">
       {status.isLoading ? <Loading /> : status.error ? <ErrorBox error={status.error} onRetry={() => status.refetch()} /> : s ? (
         <Card>
           <T style={{ fontWeight: '700' }}>{s.subscribed ? `Plan: ${s.plan}` : 'Free plan'}</T>

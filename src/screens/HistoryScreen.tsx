@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { ScrollView } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../api';
-import { Badge, Button, Card, Chip, Dim, Empty, ErrorBox, H1, Loading, Row, Screen, T, c, pts, when } from '../ui';
+import { Badge, Card, Chip, Dim, Empty, ErrorBox, Loading, Row, Screen, T, c, pts, when } from '../ui';
 import type { Prediction } from '../types';
 
-const FILTERS = ['all', 'confirmed', 'won', 'lost', 'refunded'];
+const FILTERS: [string, string][] = [['all', 'All'], ['confirmed', 'Active'], ['won', 'Won'], ['lost', 'Lost'], ['refunded', 'Returned']];
 
 export default function HistoryScreen({ navigation }: any) {
   const [f, setF] = useState('all');
@@ -14,17 +14,15 @@ export default function HistoryScreen({ navigation }: any) {
     queryFn: () => api.get<{ data: Prediction[]; totals: { used: number; won: number } }>('/predictions' + (f === 'all' ? '' : `?status=${f}`)),
   });
   return (
-    <Screen onRefresh={() => q.refetch()} refreshing={q.isRefetching} edges={['top']}>
-      <Button title="‹ Back" kind="ghost" onPress={() => navigation.goBack()} style={{ alignSelf: 'flex-start', paddingVertical: 8, paddingHorizontal: 14, marginBottom: 10 }} />
-      <H1>Prediction history</H1>
+    <Screen title="Prediction history" onRefresh={() => q.refetch()} refreshing={q.isRefetching}>
       {q.data ? (
         <Row style={{ gap: 10, marginBottom: 12 }}>
           <Card style={{ flex: 1, marginBottom: 0 }}><Dim>Diamonds used (settled)</Dim><T style={{ fontWeight: '800', fontSize: 18 }}>{pts(q.data.totals.used)}</T></Card>
           <Card style={{ flex: 1, marginBottom: 0 }}><Dim>Diamonds won</Dim><T style={{ fontWeight: '800', fontSize: 18, color: c.good }}>{pts(q.data.totals.won)}</T></Card>
         </Row>
       ) : null}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
-        {FILTERS.map((x) => <Chip key={x} label={x} active={f === x} onPress={() => setF(x)} />)}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12, flexGrow: 0 }}>
+        {FILTERS.map(([x, label]) => <Chip key={x} label={label} active={f === x} onPress={() => setF(x)} />)}
       </ScrollView>
       {q.isLoading ? <Loading /> : q.error ? <ErrorBox error={q.error} onRetry={() => q.refetch()} />
         : (q.data?.data.length ?? 0) === 0 ? <Empty text="No predictions yet." />

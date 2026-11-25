@@ -5,7 +5,7 @@ import { api, errMsg } from '../api';
 import { ORIGIN } from '../config';
 import { unregisterPush } from '../push';
 import { useAuth } from '../store';
-import { Button, Card, CardSkeleton, Dim, ErrorBox, Field, H1, Row, Screen, T } from '../ui';
+import { Button, Card, CardSkeleton, Dim, ErrorBox, Field, Row, Screen, T } from '../ui';
 import { colors, radius } from '../theme';
 
 type Check = { blocked: string | null; needs_password: boolean; owns_clubs: number };
@@ -35,9 +35,7 @@ export default function DeleteAccountScreen({ navigation }: any) {
   );
 
   return (
-    <Screen edges={['top']}>
-      <Button title="‹ Back" kind="ghost" onPress={() => navigation.goBack()} style={{ alignSelf: 'flex-start', paddingVertical: 8, paddingHorizontal: 14, marginBottom: 10 }} />
-      <H1>Delete account</H1>
+    <Screen title="Delete account">
       <Card>
         <T style={{ fontWeight: '800', marginBottom: 8 }}>What happens</T>
         <Item>Your name, email, phone number, ID photo and sign-ins are erased.</Item>

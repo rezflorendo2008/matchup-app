@@ -8,7 +8,7 @@ import { POLL_MS } from '../config';
 import { useAuth } from '../store';
 import { PhoneField } from '../components/PhoneField';
 import { Country, detectCountry, splitE164, toE164 } from '../countries';
-import { Button, Card, Chip, Dim, Field, H1, Row, Screen, T, VerifiedPill, c } from '../ui';
+import { Button, Card, Chip, Dim, Field, Row, Screen, T, VerifiedPill, c } from '../ui';
 import { View } from 'react-native';
 import type { User } from '../types';
 
@@ -79,9 +79,7 @@ export default function VerifyScreen({ navigation }: any) {
   );
 
   return (
-    <Screen>
-      <Button title="‹ Back" kind="ghost" onPress={() => navigation.goBack()} style={{ alignSelf: 'flex-start', paddingVertical: 8, paddingHorizontal: 14, marginBottom: 10 }} />
-      <H1>Verify your account</H1>
+    <Screen title="Verify your account">
       {user.can_predict ? (
         <Card style={{ borderColor: c.good }}>
           <VerifiedPill />

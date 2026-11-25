@@ -116,8 +116,7 @@ export default function ClubScreen({ route, navigation }: any) {
   const active: Tab = approved ? tab : 'about';
 
   return (
-    <Screen onRefresh={() => q.refetch()} refreshing={q.isRefetching}>
-      <Button title="‹ Back" kind="ghost" onPress={() => navigation.goBack()} style={{ alignSelf: 'flex-start', paddingVertical: 8, paddingHorizontal: 14, marginBottom: 10 }} />
+    <Screen title="Club" onRefresh={() => q.refetch()} refreshing={q.isRefetching}>
       {q.isLoading ? <CardSkeleton rows={3} kind="club" /> : q.error || !cl ? <ErrorBox error={q.error} onRetry={() => q.refetch()} /> : (
         <>
           {cl.banner ? <Image source={{ uri: cl.banner }} style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: radius.lg, marginBottom: 10, backgroundColor: colors.card }} resizeMode="cover" accessibilityLabel={`${cl.name} banner`} /> : null}
