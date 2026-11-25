@@ -1,7 +1,7 @@
 import { BrandMark, DiamondGem } from './components/Brand';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator, Animated, Easing, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TextInputProps, View, ViewStyle,
+  ActivityIndicator, Animated, Easing, Image, KeyboardAvoidingView, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TextInputProps, View, ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -9,7 +9,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from './api';
 import { POLL_MS } from './config';
 import { colors, font, radius, shadow, spacing } from './theme';
-import { AlertIcon, BellIcon, CheckBadgeIcon, DiamondIcon, PlusIcon } from './icons';
+import { AlertIcon, BellIcon, CheckBadgeIcon, ChevronLeftIcon, DiamondIcon, PlusIcon } from './icons';
 import type { Club } from './types';
 
 /** Colour aliases kept for the existing screens; new code should import from ./theme. */
@@ -104,18 +104,45 @@ export function AppHeader() {
   );
 }
 
-export function Screen({ children, scroll = true, onRefresh, refreshing = false, edges, hideBar = false }: {
-  children: React.ReactNode; scroll?: boolean; onRefresh?: () => void; refreshing?: boolean; edges?: ('top' | 'bottom')[]; hideBar?: boolean;
-}) {
+/** Header for pushed (detail) screens: back arrow, title and an optional action on the right. Stays fixed while the page scrolls. */
+export function TopBar({ title, right, onBack }: { title?: string; right?: React.ReactNode; onBack?: () => void }) {
+  const nav = useNavigation<any>();
+  const back = onBack ?? (() => (nav.canGoBack() ? nav.goBack() : nav.navigate('Tabs')));
   return (
-    <SafeAreaView style={s.screen} edges={edges ?? ['top']}>
-      {hideBar ? null : <AppHeader />}
-      {scroll ? (
-        <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: 48 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}
-          refreshControl={onRefresh ? <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primarySoft} /> : undefined}>
-          {children}
-        </ScrollView>
-      ) : children}
+    <View style={s.topBar}>
+      <PressScale onPress={back} accessibilityLabel="Go back" hitSlop={8} style={s.backBtn}>
+        <ChevronLeftIcon size={22} color={colors.text} />
+      </PressScale>
+      <Text style={s.topTitle} numberOfLines={1} accessibilityRole="header">{title ?? ''}</Text>
+      <View style={{ minWidth: 40, alignItems: 'flex-end' }}>{right}</View>
+    </View>
+  );
+}
+
+/**
+ * Page wrapper. Tab screens get the brand header; give a `title` to get the back-arrow TopBar instead (detail screens).
+ * `footer` is pinned to the bottom above the keyboard, for the screen's main action.
+ */
+export function Screen({ children, scroll = true, onRefresh, refreshing = false, edges, hideBar = false, title, right, footer }: {
+  children: React.ReactNode; scroll?: boolean; onRefresh?: () => void; refreshing?: boolean; edges?: ('top' | 'bottom')[]; hideBar?: boolean;
+  title?: string; right?: React.ReactNode; footer?: React.ReactNode;
+}) {
+  const detail = title !== undefined;
+  const body = scroll ? (
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: spacing.lg, paddingBottom: footer ? 24 : 48 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}
+      keyboardDismissMode="on-drag" refreshControl={onRefresh ? <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primarySoft} /> : undefined}>
+      {children}
+    </ScrollView>
+  ) : children;
+  return (
+    <SafeAreaView style={s.screen} edges={edges ?? (detail ? ['top', 'bottom'] : ['top'])}>
+      {hideBar ? null : detail ? <TopBar title={title} right={right} /> : <AppHeader />}
+      {footer ? (
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          {body}
+          <View style={s.footer}>{footer}</View>
+        </KeyboardAvoidingView>
+      ) : body}
     </SafeAreaView>
   );
 }
@@ -176,9 +203,10 @@ export function Field({ label, ...p }: TextInputProps & { label?: string }) {
   );
 }
 
-export function Chip({ label, active, onPress }: { label: string; active?: boolean; onPress: () => void }) {
+export function Chip({ label, active, onPress, disabled, style }: { label: string; active?: boolean; onPress: () => void; disabled?: boolean; style?: ViewStyle }) {
   return (
-    <Pressable onPress={onPress} style={[s.chip, active && { backgroundColor: colors.primary, borderColor: colors.primary }]}>
+    <Pressable onPress={onPress} disabled={disabled} accessibilityRole="button" accessibilityState={{ selected: !!active, disabled: !!disabled }} hitSlop={4}
+      style={[s.chip, active && { backgroundColor: colors.primary, borderColor: colors.primary }, disabled && { opacity: 0.4 }, style]}>
       <Text style={{ color: active ? '#fff' : colors.dim, fontWeight: '600', fontSize: font.size.sm }}>{label}</Text>
     </Pressable>
   );
@@ -375,4 +403,8 @@ export const s = StyleSheet.create({
   empty: { alignItems: 'center', paddingVertical: 28, paddingHorizontal: 20 },
   emptyIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
   shadow: shadow.card as any,
+  topBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: 8, backgroundColor: colors.bg, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.line },
+  backBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line },
+  topTitle: { flex: 1, color: colors.text, fontSize: 17, fontWeight: '800', textAlign: 'center', marginHorizontal: 8, letterSpacing: -0.2 },
+  footer: { paddingHorizontal: spacing.lg, paddingTop: 10, paddingBottom: 10, backgroundColor: colors.bg2, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line },
 });

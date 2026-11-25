@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Alert, ScrollView } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, errMsg } from '../api';
-import { Badge, Button, Card, Chip, Dim, ErrorBox, Field, H1, H2, Loading, Row, Screen, T, pts, when } from '../ui';
+import { Badge, Button, Card, Chip, Dim, ErrorBox, Field, H2, Loading, Row, Screen, T, pts, when } from '../ui';
 import type { Club } from '../types';
 
 export default function AddDiamondsScreen({ navigation }: any) {
@@ -22,9 +22,7 @@ export default function AddDiamondsScreen({ navigation }: any) {
   const n = Number(amount);
 
   return (
-    <Screen edges={['top', 'bottom']}>
-      <Button title="‹ Back" kind="ghost" onPress={() => navigation.goBack()} style={{ alignSelf: 'flex-start', paddingVertical: 8, paddingHorizontal: 14, marginBottom: 10 }} />
-      <H1>Get diamonds</H1>
+    <Screen title="Get diamonds">
       <Dim style={{ marginBottom: 12 }}>Only your club owner can add diamonds to your account. You can ask for more below, and you can see everything added or claimed in your history.</Dim>
       {clubsQ.isLoading ? <Loading /> : clubsQ.error ? <ErrorBox error={clubsQ.error} onRetry={() => clubsQ.refetch()} />
         : !club ? (

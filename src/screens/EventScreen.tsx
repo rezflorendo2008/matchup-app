@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '../api';
 import { POLL_MS } from '../config';
 import { EventCard } from '../components/EventGroups';
-import { Button, Dim, ErrorBox, H1, H2, Loading, Screen, T, when } from '../ui';
+import { Dim, ErrorBox, H1, H2, Loading, Screen, T, when } from '../ui';
 import type { EventItem, Match } from '../types';
 
 export default function EventScreen({ route, navigation }: any) {
@@ -13,8 +13,7 @@ export default function EventScreen({ route, navigation }: any) {
   const order: Record<string, number> = { open: 0, paused: 1, upcoming: 2, closed: 3, settled: 4 };
   const list = [...(q.data ?? [])].sort((a, b) => (order[a.status] ?? 9) - (order[b.status] ?? 9));
   return (
-    <Screen onRefresh={() => q.refetch()} refreshing={q.isRefetching}>
-      <Button title="‹ Back" kind="ghost" onPress={() => navigation.goBack()} style={{ alignSelf: 'flex-start', paddingVertical: 8, paddingHorizontal: 14, marginBottom: 10 }} />
+    <Screen title="Event" onRefresh={() => q.refetch()} refreshing={q.isRefetching}>
       {e.image ? <Image source={{ uri: e.image }} style={{ width: '100%', height: 190, borderRadius: 14, marginBottom: 14 }} resizeMode="cover" /> : null}
       <Dim>{e.category_icon ? `${e.category_icon} ` : ''}{e.category ?? 'Event'}</Dim>
       <H1>{e.title}</H1>

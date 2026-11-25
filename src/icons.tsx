@@ -38,7 +38,13 @@ export const PlusIcon = ({ size = 16, color = colors.white }: IconProps) => (
 export const ChevronRightIcon = ({ size = 18, color = colors.dim }: IconProps) => (
   <Svg {...base(size)}><Path d="m9 6 6 6-6 6" {...stroke(color)} /></Svg>
 );
-export const ChevronDownIcon = ({ size = 18, color = colors.dim }: IconProps) => (
+export const ChevronLeftIcon = ({ size = 18, color = colors.dim }: IconProps) => (
+  <Svg {...base(size)}><Path d="m15 6-6 6 6 6" {...stroke(color)} /></Svg>
+);
+export const CheckIcon = ({ size = 16, color = colors.white }: IconProps) => (
+  <Svg {...base(size)}><Path d="m5 12.5 4.5 4.5L19 7.5" stroke={color} strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" /></Svg>
+);
+export const ChevronDownIcon =({ size = 18, color = colors.dim }: IconProps) => (
   <Svg {...base(size)}><Path d="m6 9 6 6 6-6" {...stroke(color)} /></Svg>
 );
 export const CheckBadgeIcon = ({ size = 16, color = colors.primary }: IconProps) => (

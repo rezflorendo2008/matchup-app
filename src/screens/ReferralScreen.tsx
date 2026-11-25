@@ -3,7 +3,7 @@ import { Share, Text, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../api';
 import { POLL_MS } from '../config';
-import { Badge, Button, Card, CardSkeleton, Chip, ClubAvatar, Dim, EmptyState, ErrorBox, H1, Row, Screen, SectionHeader, T, c, pts, when } from '../ui';
+import { Badge, Button, Card, CardSkeleton, Chip, ClubAvatar, Dim, EmptyState, ErrorBox, Row, Screen, SectionHeader, T, c, pts, when } from '../ui';
 import { DiamondIcon } from '../icons';
 import { colors, radius } from '../theme';
 
@@ -33,9 +33,7 @@ export default function ReferralScreen({ route, navigation }: any) {
   }).catch(() => {});
 
   return (
-    <Screen onRefresh={() => q.refetch()} refreshing={q.isRefetching}>
-      <Button title="‹ Back" kind="ghost" onPress={() => navigation.goBack()} style={{ alignSelf: 'flex-start', paddingVertical: 8, paddingHorizontal: 14, marginBottom: 10 }} />
-      <H1>Refer & earn</H1>
+    <Screen title="Refer & earn" onRefresh={() => q.refetch()} refreshing={q.isRefetching}>
       {q.isLoading ? <CardSkeleton rows={3} /> : q.error ? <ErrorBox error={q.error} onRetry={() => q.refetch()} />
         : !cl ? <EmptyState title="No referral rewards yet" text="When a club you are verified in turns on refer-a-friend, your link and earnings show up here." actionLabel="My clubs" onAction={() => navigation.navigate('Tabs', { screen: 'Clubs' })} />
         : (

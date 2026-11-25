@@ -3,7 +3,7 @@ import { Text, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api';
 import { POLL_MS } from '../config';
-import { Button, Card, CardSkeleton, Dim, EmptyState, ErrorBox, H1, Row, Screen, T, when } from '../ui';
+import { Card, CardSkeleton, Dim, EmptyState, ErrorBox, Row, Screen, T, when } from '../ui';
 import { ArrowDownIcon, ArrowUpIcon, BellIcon, CheckBadgeIcon, DiamondIcon, TargetIcon, TrophyIcon, UsersIcon } from '../icons';
 import { colors, radius } from '../theme';
 
@@ -37,12 +37,8 @@ export default function NotificationsScreen({ navigation }: any) {
   };
 
   return (
-    <Screen onRefresh={() => q.refetch()} refreshing={q.isRefetching}>
-      <Button title="‹ Back" kind="ghost" onPress={() => navigation.goBack()} style={{ alignSelf: 'flex-start', paddingVertical: 8, paddingHorizontal: 14, marginBottom: 10 }} />
-      <Row style={{ justifyContent: 'space-between' }}>
-        <H1>Notifications</H1>
-        {unread > 0 ? <Text onPress={() => readAll.mutate()} style={{ color: colors.primarySoft, fontWeight: '700' }}>Mark all read</Text> : null}
-      </Row>
+    <Screen title="Notifications" onRefresh={() => q.refetch()} refreshing={q.isRefetching}
+      right={unread > 0 ? <Text onPress={() => readAll.mutate()} accessibilityRole="button" style={{ color: colors.primarySoft, fontWeight: '700', fontSize: 13 }}>Read all</Text> : null}>
       {q.isLoading ? <CardSkeleton rows={4} /> : q.error ? <ErrorBox error={q.error} onRetry={() => q.refetch()} />
         : (q.data?.data.length ?? 0) === 0 ? <EmptyState icon={<BellIcon size={26} color={colors.dim} />} title="You're all caught up" text="Wins, diamonds, new matches and match start reminders show up here." />
         : q.data!.data.map((n) => {

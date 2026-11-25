@@ -67,13 +67,11 @@ export function LiveMatchCard({ m, onOpen }: { m: Match; onOpen: OpenMatch }) {
         <View style={{ width: 28, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: colors.dim, fontWeight: '800', fontSize: 11 }}>VS</Text></View>
         <TeamPlayerCard m={m} k="b" onOpen={onOpen} dense />
       </Row>
-      <Row style={{ marginTop: 8, justifyContent: 'space-between' }}>
-        <MyPredicted m={m} style={{ flex: 1, marginRight: 8, fontSize: 12 }} />
-        <PressScale onPress={() => onOpen(m)} accessibilityLabel={m.status === 'open' ? 'View match and predict' : 'View match'}
-          style={{ backgroundColor: colors.primary, borderRadius: radius.pill, paddingHorizontal: 14, minHeight: 32, alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={{ color: colors.white, fontWeight: '800', fontSize: 12.5 }}>{m.status === 'open' ? 'Predict' : 'View'}</Text>
-        </PressScale>
-      </Row>
+      <MyPredicted m={m} style={{ marginTop: 8, fontSize: 12, textAlign: 'center' }} />
+      <PressScale onPress={() => onOpen(m)} accessibilityLabel={m.status === 'open' ? 'View match and predict' : 'View match'}
+        style={{ marginTop: 8, backgroundColor: colors.primary, borderRadius: radius.pill, minHeight: 36, alignItems: 'center', justifyContent: 'center' }}>
+        <Text style={{ color: colors.white, fontWeight: '800', fontSize: 13 }}>{m.status === 'open' ? 'View match & predict' : 'View match'}</Text>
+      </PressScale>
     </View>
   );
 }
