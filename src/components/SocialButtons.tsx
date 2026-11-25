@@ -88,9 +88,11 @@ export function SocialButtons({ onError }: { onError: Done }) {
   useEffect(() => {
     if (Platform.OS === 'ios') AppleAuthentication.isAvailableAsync().then(setAppleReady).catch(() => setAppleReady(false));
   }, []);
-  if (!googleReady && !fbReady && !appleReady) return <Dim style={{ textAlign: 'center', marginTop: 8 }}>Google and Facebook sign-in appear here once their IDs are set in .env</Dim>;
+  // Nothing configured: a hint for developers only. Release builds show nothing (not even the "or continue with" label).
+  if (!googleReady && !fbReady && !appleReady) return __DEV__ ? <Dim style={{ textAlign: 'center', marginTop: 8 }}>Google and Facebook sign-in appear here once their IDs are set in .env</Dim> : null;
   return (
     <View style={{ marginTop: 8 }}>
+      <Dim style={{ textAlign: 'center', marginBottom: 8 }}>or continue with</Dim>
       {appleReady ? <AppleButton onError={onError} /> : null}
       {googleReady ? <GoogleButton onError={onError} /> : null}
       {fbReady ? <FacebookButton onError={onError} /> : null}
