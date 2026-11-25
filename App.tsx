@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { AppState, Linking } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer, DarkTheme, createNavigationContainerRef } from '@react-navigation/native';
@@ -9,11 +10,16 @@ import * as Notifications from 'expo-notifications';
 
 import { api } from './src/api';
 import { registerForPush } from './src/push';
+import { clearPending, parseJoinUrl, readPending, savePending } from './src/pending';
 import { useRealtime } from './src/realtime';
 import { useAuth } from './src/store';
+import { useMaint } from './src/maintenance';
+import MaintenanceScreen from './src/screens/MaintenanceScreen';
+import { BASE } from './src/config';
 import { c, ScreenSkeleton } from './src/ui';
 import { BottomNavigation } from './src/components/BottomNavigation';
 import { colors } from './src/theme';
+import { warnIfDeviceCompromised } from './src/security';
 import type { Club, User } from './src/types';
 
 import LoginScreen from './src/screens/LoginScreen';
@@ -31,6 +37,7 @@ import EventScreen from './src/screens/EventScreen';
 import SubscriptionScreen from './src/screens/SubscriptionScreen';
 import DeleteAccountScreen from './src/screens/DeleteAccountScreen';
 import NotificationsScreen from './src/screens/NotificationsScreen';
+import ReferralScreen from './src/screens/ReferralScreen';
 
 const qc = new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 5000 } } });
 const nav = createNavigationContainerRef<any>();
@@ -57,11 +64,26 @@ function Session() {
   const clubs = useQuery({ queryKey: ['clubs'], queryFn: () => api.get<Club[]>('/clubs') });
   useRealtime((clubs.data ?? []).filter((x) => x.membership === 'approved').map((x) => x.id));
   useEffect(() => { api.get<User>('/me').then(setUser).catch(() => {}); registerForPush(); }, []);
+  // An invite link opened before sign-up: send the player to the club join as soon as they are in.
+  useEffect(() => {
+    let tries = 0;
+    const t = setInterval(async () => {
+      if (++tries > 20) return clearInterval(t);
+      if (!nav.isReady()) return;
+      clearInterval(t);
+      const p = await readPending();
+      if (!p) return;
+      await clearPending();
+      nav.navigate('Tabs', { screen: 'Clubs', params: { slug: p.slug, ref: p.ref } });
+    }, 300);
+    return () => clearInterval(t);
+  }, []);
   useEffect(() => {
     const sub = Notifications.addNotificationResponseReceivedListener((r) => {
       const d: any = r.notification.request.content.data ?? {};
       if (!nav.isReady()) return;
       if (d.type === 'match' && d.match_id) nav.navigate('Prediction', { id: Number(d.match_id) });
+      else if (d.type === 'referral') nav.navigate('Referral');
       else if (d.type === 'diamonds' || d.type === 'wallet') nav.navigate('Tabs', { screen: 'Diamonds' });
     });
     return () => sub.remove();
@@ -72,7 +94,25 @@ function Session() {
 function Root() {
   const { hydrated, token, hydrate } = useAuth();
   useEffect(() => { hydrate(); }, []);
+  // Signed out: remember invite links (pickarena://join/<club>?ref=CODE) so they survive sign-up.
+  useEffect(() => {
+    if (token) return;
+    const keep = (url?: string | null) => { const p = parseJoinUrl(url); if (p) savePending(p); };
+    Linking.getInitialURL().then(keep).catch(() => {});
+    const sub = Linking.addEventListener('url', (e) => keep(e.url));
+    return () => sub.remove();
+  }, [token]);
+  const maint = useMaint((s) => s.on);
+  // Ask the server once at start (and when the app returns to the foreground) so people see the maintenance page before anything fails.
+  useEffect(() => {
+    const ask = () => fetch(`${BASE}/status`, { headers: { Accept: 'application/json' } }).then((r) => r.json())
+      .then((s) => { if (s?.maintenance) useMaint.getState().set({ title: s.title, message: s.message, eta: s.eta }); }).catch(() => {});
+    ask();
+    const sub = AppState.addEventListener('change', (st) => { if (st === 'active') ask(); });
+    return () => sub.remove();
+  }, []);
   if (!hydrated) return <ScreenSkeleton />;
+  if (maint) return <MaintenanceScreen />;
 
   const linking = {
     prefixes: ['pickarena://'],
@@ -92,6 +132,7 @@ function Root() {
             <Stack.Screen name="History" component={HistoryScreen} />
             <Stack.Screen name="Verify" component={VerifyScreen} />
             <Stack.Screen name="Notifications" component={NotificationsScreen} />
+            <Stack.Screen name="Referral" component={ReferralScreen} />
             <Stack.Screen name="Event" component={EventScreen} />
             <Stack.Screen name="Subscription" component={SubscriptionScreen} />
             <Stack.Screen name="DeleteAccount" component={DeleteAccountScreen} />
@@ -107,6 +148,7 @@ function Root() {
 }
 
 export default function App() {
+  useEffect(() => { warnIfDeviceCompromised(); }, []);
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={qc}>

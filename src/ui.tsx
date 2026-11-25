@@ -1,3 +1,4 @@
+import { BrandMark, DiamondGem } from './components/Brand';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator, Animated, Easing, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TextInputProps, View, ViewStyle,
@@ -45,11 +46,9 @@ export function PressScale({ children, onPress, style, wrapStyle, disabled, scal
 
 export function Logo({ size = 30 }: { size?: number }) {
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-      <View style={{ width: size, height: size, borderRadius: size * 0.3, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', marginRight: 8 }}>
-        <DiamondIcon size={size * 0.62} color={colors.white} />
-      </View>
-      <Text style={s.brand}>Pick<Text style={{ color: colors.primarySoft }}>Arena</Text></Text>
+    <View style={{ flexDirection: 'row', alignItems: 'center' }} accessible accessibilityLabel="PickArena">
+      <BrandMark size={size * 1.25} />
+      <Text style={[s.brand, { marginLeft: 6 }]}>Pick<Text style={{ color: colors.primarySoft }}>Arena</Text></Text>
     </View>
   );
 }
@@ -61,7 +60,7 @@ export function DiamondWalletButton() {
   const total = (q.data ?? []).filter((x) => x.membership === 'approved').reduce((a, x) => a + Number(x.balance ?? 0), 0);
   return (
     <PressScale onPress={() => nav.navigate('AddDiamonds')} accessibilityLabel="Add diamonds" hitSlop={8} style={s.pill}>
-      <DiamondIcon size={16} color={colors.primarySoft} />
+      <DiamondGem size={18} />
       <Text style={s.pillText}>{pts(total)}</Text>
       <View style={s.plus}><PlusIcon size={14} color={colors.white} /></View>
     </PressScale>
@@ -159,10 +158,20 @@ export function Button({ title, onPress, kind = 'primary', loading, disabled, st
 }
 
 export function Field({ label, ...p }: TextInputProps & { label?: string }) {
+  const secure = !!p.secureTextEntry;
+  const [shown, setShown] = useState(false);
   return (
     <View style={{ marginBottom: spacing.md }}>
       {label ? <Text style={s.label}>{label}</Text> : null}
-      <TextInput placeholderTextColor={colors.dim} autoCapitalize="none" {...p} style={[s.input, p.style]} />
+      <View>
+        <TextInput placeholderTextColor={colors.dim} autoCapitalize="none" {...p} secureTextEntry={secure && !shown} style={[s.input, p.style, secure ? { paddingRight: 64 } : null]} />
+        {secure ? (
+          <Pressable onPress={() => setShown(!shown)} hitSlop={10} accessibilityRole="button" accessibilityLabel={shown ? 'Hide password' : 'Show password'}
+            style={{ position: 'absolute', right: 0, top: 0, bottom: 0, paddingHorizontal: 14, justifyContent: 'center' }}>
+            <Text style={{ color: colors.primarySoft, fontWeight: '700', fontSize: 14 }}>{shown ? 'Hide' : 'Show'}</Text>
+          </Pressable>
+        ) : null}
+      </View>
     </View>
   );
 }

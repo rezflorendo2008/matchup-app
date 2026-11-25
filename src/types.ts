@@ -1,6 +1,6 @@
 export interface User {
   id: number; name: string; phone: string | null; email: string | null;
-  phone_verified: boolean; kyc_status: string; can_predict: boolean; verified?: boolean; is_owner: boolean;
+  phone_verified: boolean; kyc_status: string; can_predict: boolean; verified?: boolean; id_required?: boolean; is_owner: boolean;
 }
 export interface Category { id: number; name: string; slug: string; icon: string | null }
 export interface Match {
@@ -14,7 +14,7 @@ export interface Prediction {
   status: string; reward: number | null; can_edit: boolean; created_at: string;
 }
 export interface Club {
-  id: number; name: string; club_code: string; logo: string | null; club_pays: boolean; commission_pct: number; status: string;
+  id: number; name: string; club_code: string; logo: string | null; banner?: string | null; id_required?: boolean; referral?: { text: string } | null; club_pays: boolean; commission_pct: number; status: string;
   membership: string | null; balance: number | null;
 }
 export interface ClubProfile extends Club {
@@ -39,5 +39,5 @@ export interface Home { featured_clubs: FeaturedClub[]; promos: Promo[]; ads: Pr
 export interface WalletRow { club_id: number; club: string; balance: number }
 export interface Tx { id: number; type: string; amount: number; balance_after: number; note: string | null; created_at: string }
 export interface Req { id: number; type: 'diamonds_request'; amount: number; status: string; note: string | null; created_at: string }
-export interface SubStatus { subscribed: boolean; plan: string | null; expires_at: string | null; limit: number | null; used: number; remaining: number | null }
-export interface Plan { id: number; name: string; product_id: string; monthly_match_limit: number | null; price_label: string | null }
+export interface SubStatus { subscribed: boolean; plan: string | null; expires_at: string | null; limit: number | null; used: number; remaining: number | null; club_limit: number | null; clubs_used: number }
+export interface Plan { id: number; name: string; product_id: string; monthly_match_limit: number | null; max_clubs: number | null; price_label: string | null }

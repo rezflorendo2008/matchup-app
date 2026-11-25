@@ -2,6 +2,8 @@ const env = (k: string): string => ((process.env as any)[k] ?? '').toString().tr
 
 /** Where the Laravel API lives. Set EXPO_PUBLIC_API_URL in .env, then restart with `npx expo start -c`. */
 export const BASE = (env('EXPO_PUBLIC_API_URL') || 'http://pickarena.test/api/v1').replace(/\/+$/, '');
+/** Release builds talk to the server over HTTPS only. A plain http:// address is accepted just while developing. */
+export const SECURE_TRANSPORT = __DEV__ || BASE.startsWith('https://') || env('EXPO_PUBLIC_ALLOW_HTTP') === '1';   // the flag is for internal preview builds only
 /** Server root (used for websocket auth). */
 export const ORIGIN = BASE.replace(/\/api\/v1$/, '');
 

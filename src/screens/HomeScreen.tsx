@@ -16,8 +16,9 @@ import type { Prediction, Home, Match, Promo } from '../types';
 function JoinFirstClub({ name, onBrowse }: { name: string; onBrowse: () => void }) {
   const qc = useQueryClient();
   const [code, setCode] = useState('');
+  const [ref, setRef] = useState('');
   const join = useMutation({
-    mutationFn: (v: string) => api.post('/clubs/join', { club_id: v }),
+    mutationFn: (v: string) => api.post('/clubs/join', { club_id: v, ref: ref.trim() || undefined }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['home'] }); qc.invalidateQueries({ queryKey: ['clubs'] }); Alert.alert('Request sent', 'The club owner will verify you soon.'); setCode(''); },
     onError: (e) => Alert.alert('Could not join', errMsg(e)),
   });
@@ -37,6 +38,7 @@ function JoinFirstClub({ name, onBrowse }: { name: string; onBrowse: () => void 
           </Row>
         ))}
         <Field label="Club ID" value={code} onChangeText={setCode} autoCapitalize="characters" autoCorrect={false} placeholder="e.g. AB12CD" />
+        <Field label="Referral code (optional)" value={ref} onChangeText={(v) => setRef(v.toUpperCase())} autoCapitalize="characters" autoCorrect={false} placeholder="From a friend" />
         <Button title="Request to join" onPress={() => join.mutate(code.trim())} loading={join.isPending} disabled={code.trim().length < 3} />
       </Card>
       <Button title="Browse clubs" kind="ghost" onPress={onBrowse} style={{ marginTop: 12 }} />

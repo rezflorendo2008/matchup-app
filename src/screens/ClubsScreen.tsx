@@ -3,7 +3,7 @@ import { Alert, Pressable, Text, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, errMsg } from '../api';
 import { Badge, Button, Card, CardSkeleton, ClubAvatar, ClubVerificationBadge, Dim, ErrorBox, Field, H1, Row, Screen, SectionHeader, T, pts } from '../ui';
-import { DiamondIcon, SearchIcon } from '../icons';
+import { ChevronRightIcon, DiamondIcon, SearchIcon } from '../icons';
 import { colors, radius } from '../theme';
 import type { Club } from '../types';
 
@@ -11,6 +11,7 @@ export default function ClubsScreen({ route, navigation }: any) {
   const qc = useQueryClient();
   const [code, setCode] = useState('');
   const [found, setFound] = useState<Club | null>(null);
+  const [ref, setRef] = useState<string>(route?.params?.ref ?? '');
   const clubs = useQuery({ queryKey: ['clubs'], queryFn: () => api.get<Club[]>('/clubs') });
 
   const refresh = () => ['clubs', 'matches', 'home', 'wallets'].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
@@ -21,24 +22,14 @@ export default function ClubsScreen({ route, navigation }: any) {
     onError: (e) => { setFound(null); Alert.alert('Not found', errMsg(e)); },
   });
   const join = useMutation({
-    mutationFn: (body: { club_id?: string; slug?: string }) => api.post<Club>('/clubs/join', body),
+    mutationFn: (body: { club_id?: string; slug?: string; ref?: string }) => api.post<Club>('/clubs/join', body),
     onSuccess: (c) => { setFound(c); refresh(); Alert.alert('Request sent', c.membership === 'approved' ? 'You are already verified in this club.' : 'The club owner must verify you before you can make predictions.'); },
     onError: (e) => Alert.alert('Could not join', errMsg(e)),
   });
 
-  const leave = useMutation({
-    mutationFn: (id: number) => api.del(`/clubs/${id}/membership`),
-    onSuccess: () => { refresh(); Alert.alert('Done', 'You have left the club.'); },
-    onError: (e) => Alert.alert('Could not leave', errMsg(e)),
-  });
-  const askLeave = (cl: Club) => Alert.alert(
-    cl.membership === 'pending' ? 'Cancel your request?' : `Leave ${cl.name}?`,
-    cl.membership === 'approved' ? `Your ${pts(cl.balance)} diamonds stay in the club. If you rejoin later and the owner approves, they come back. You can't predict here while you're away.` : undefined,
-    [{ text: 'Stay', style: 'cancel' }, { text: cl.membership === 'pending' ? 'Cancel request' : 'Leave club', style: 'destructive', onPress: () => leave.mutate(cl.id) }]);
-
   // opened from an owner's sign-up link (pickarena://join/<slug>)
   const slug: string | undefined = route?.params?.slug;
-  useEffect(() => { if (slug) join.mutate({ slug }); }, [slug]);
+  useEffect(() => { if (slug) join.mutate({ slug, ref: ref.trim() || undefined }); }, [slug]);
 
   const ClubTitle = ({ club }: { club: Club }) => (
     <Row style={{ flex: 1 }}>
@@ -56,11 +47,12 @@ export default function ClubsScreen({ route, navigation }: any) {
       <Card>
         <Row style={{ marginBottom: 10 }}><SearchIcon /><T style={{ fontWeight: '800', marginLeft: 8 }}>Join with a club ID</T></Row>
         <Field label="Club ID" value={code} onChangeText={setCode} autoCapitalize="characters" placeholder="Ask the club owner" />
+        <Field label="Referral code (optional)" value={ref} onChangeText={(v) => setRef(v.toUpperCase())} autoCapitalize="characters" autoCorrect={false} placeholder="From a friend" />
         <Button title="Find club" kind="ghost" onPress={() => search.mutate(code)} loading={search.isPending} disabled={code.trim().length < 3} />
         {found ? (
           <View style={{ marginTop: 14, backgroundColor: colors.bg2, borderRadius: radius.lg, padding: 12, borderWidth: 1, borderColor: colors.line }}>
             <Row style={{ justifyContent: 'space-between' }}><Pressable style={{ flex: 1 }} onPress={() => navigation.navigate('Club', { id: found.id })}><ClubTitle club={found} /></Pressable>{found.membership ? <Badge text={found.membership} /> : null}</Row>
-            {!found.membership ? <Button title="Request to join" small style={{ marginTop: 12 }} onPress={() => join.mutate({ club_id: found.club_code })} loading={join.isPending} /> : null}
+            {!found.membership ? <Button title="Request to join" small style={{ marginTop: 12 }} onPress={() => join.mutate({ club_id: found.club_code, ref: ref.trim() || undefined })} loading={join.isPending} /> : null}
           </View>
         ) : null}
       </Card>
@@ -75,20 +67,18 @@ export default function ClubsScreen({ route, navigation }: any) {
         : !hasNone ? (
           <>
             {list.map((cl) => (
-              <Card key={cl.id}>
-                <Row style={{ justifyContent: 'space-between' }}><Pressable style={{ flex: 1 }} onPress={() => navigation.navigate('Club', { id: cl.id })}><ClubTitle club={cl} /></Pressable>{cl.membership !== 'approved' && cl.membership ? <Badge text={cl.membership} /> : null}</Row>
-                {cl.status !== 'active' ? <Dim style={{ marginTop: 6 }}>Club {cl.status}</Dim> : null}
-                {cl.membership === 'approved' ? (
-                  <Row style={{ marginTop: 10, justifyContent: 'space-between' }}>
-                    <Row><DiamondIcon size={18} color={colors.primarySoft} /><Text style={{ color: colors.text, fontWeight: '800', fontSize: 16, marginLeft: 8 }}>{pts(cl.balance)}</Text><Dim style={{ marginLeft: 6 }}>diamonds</Dim></Row>
-                    <Pressable onPress={() => askLeave(cl)} hitSlop={8}><Text style={{ color: colors.dim, fontWeight: '600' }}>Leave</Text></Pressable>
-                  </Row>
-                ) : (
-                  <Row style={{ marginTop: 10, justifyContent: 'space-between' }}>
-                    <Dim style={{ flex: 1 }}>Waiting for the club owner to verify you.</Dim>
-                    <Pressable onPress={() => askLeave(cl)} hitSlop={8}><Text style={{ color: colors.dim, fontWeight: '600' }}>Cancel</Text></Pressable>
-                  </Row>
-                )}
+              <Card key={cl.id} onPress={() => navigation.navigate('Club', { id: cl.id })} style={{ paddingVertical: 12 }}>
+                <Row style={{ justifyContent: 'space-between' }}>
+                  <ClubTitle club={cl} />
+                  <ChevronRightIcon />
+                </Row>
+                <Row style={{ marginTop: 10, justifyContent: 'space-between' }}>
+                  {cl.membership === 'approved'
+                    ? <Row><DiamondIcon size={16} color={colors.primarySoft} /><Text style={{ color: colors.text, fontWeight: '800', fontSize: 15, marginLeft: 6 }}>{pts(cl.balance)}</Text><Dim style={{ marginLeft: 5 }}>diamonds</Dim></Row>
+                    : <Dim style={{ flex: 1 }}>Waiting for the club owner to verify you</Dim>}
+                  {cl.membership && cl.membership !== 'approved' ? <Badge text={cl.membership} /> : null}
+                  {cl.status !== 'active' ? <Badge text={cl.status} /> : null}
+                </Row>
               </Card>
             ))}
             <SectionHeader title="Join another club" />

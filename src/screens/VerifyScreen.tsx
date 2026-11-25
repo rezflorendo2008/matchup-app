@@ -66,7 +66,9 @@ export default function VerifyScreen({ navigation }: any) {
   React.useEffect(() => { if (me.data && (me.data.kyc_status !== user.kyc_status || me.data.can_predict !== user.can_predict || me.data.phone_verified !== user.phone_verified)) setUser(me.data); }, [me.data]);
 
   const emailDone = user.phone_verified, idDone = user.kyc_status === 'verified', idPending = user.kyc_status === 'pending', idRejected = user.kyc_status === 'rejected';
-  const doneCount = (emailDone ? 1 : 0) + (idDone ? 1 : 0);
+  const needId = user.id_required !== false;   // clubs can switch ID checks off
+  const steps = needId ? 2 : 1;
+  const doneCount = (emailDone ? 1 : 0) + (needId && idDone ? 1 : 0);
   const StepHead = ({ n, done, title, sub }: { n: number; done: boolean; title: string; sub?: string }) => (
     <Row style={{ marginTop: 22, marginBottom: 10 }}>
       <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: done ? c.good : c.brand, alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
@@ -88,11 +90,11 @@ export default function VerifyScreen({ navigation }: any) {
         </Card>
       ) : (
         <>
-          <Dim>Two quick steps so club owners know you are a real player. About 2 minutes.</Dim>
+          <Dim>{needId ? 'Two quick steps so club owners know you are a real player. About 2 minutes.' : 'One quick step: confirm your email or phone. Your clubs do not ask for an ID.'}</Dim>
           <View style={{ flexDirection: 'row', gap: 6, marginTop: 12 }}>
-            {[0, 1].map((i) => <View key={i} style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: i < doneCount ? c.good : c.line }} />)}
+            {Array.from({ length: steps }, (_, i) => i).map((i) => <View key={i} style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: i < doneCount ? c.good : c.line }} />)}
           </View>
-          <Dim style={{ marginTop: 6 }}>{doneCount} of 2 done</Dim>
+          <Dim style={{ marginTop: 6 }}>{doneCount} of {steps} done{!needId && emailDone ? '. Waiting for your club owner to verify you as a member.' : ''}</Dim>
         </>
       )}
 
@@ -118,6 +120,8 @@ export default function VerifyScreen({ navigation }: any) {
         </>
       )}
 
+      {needId ? (
+        <>
       <StepHead n={2} done={idDone} title="Upload your ID" sub={idDone ? 'ID verified by your club owner' : idPending ? 'Waiting for review' : 'A club owner reviews it. Usually quick.'} />
       {idDone ? null : !emailDone ? <Dim>Finish step 1 first.</Dim>
         : idPending ? (
@@ -139,6 +143,8 @@ export default function VerifyScreen({ navigation }: any) {
             <Button title="Submit for review" onPress={submit} loading={busy} disabled={!img || name.trim().length < 2} />
           </>
         )}
+        </>
+      ) : null}
     </Screen>
   );
 }

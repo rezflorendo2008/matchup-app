@@ -39,6 +39,7 @@ export default function SubscriptionScreen({ navigation }: any) {
         <Card>
           <T style={{ fontWeight: '700' }}>{s.subscribed ? `Plan: ${s.plan}` : 'Free plan'}</T>
           <Dim>Matches this month: {s.used}{s.limit === null ? ' (unlimited)' : ` of ${s.limit}`}</Dim>
+          <Dim>Clubs: {s.clubs_used}{s.club_limit === null ? ' (unlimited)' : ` of ${s.club_limit}`}</Dim>
           {s.expires_at ? <Dim>Renews / expires {new Date(s.expires_at).toLocaleDateString()}</Dim> : null}
         </Card>
       ) : null}
@@ -50,7 +51,7 @@ export default function SubscriptionScreen({ navigation }: any) {
       {(plans.data ?? []).map((p) => (
         <Card key={p.id}>
           <T style={{ fontWeight: '700' }}>{p.name}</T>
-          <Dim>{p.monthly_match_limit === null ? 'Unlimited matches per month' : `${p.monthly_match_limit} matches per month`}{p.price_label ? ` · ${p.price_label}` : ''}</Dim>
+          <Dim>{p.monthly_match_limit === null ? 'Unlimited matches per month' : `${p.monthly_match_limit} matches per month`} · {p.max_clubs === null ? 'unlimited clubs' : `${p.max_clubs} club${p.max_clubs === 1 ? '' : 's'}`}{p.price_label ? ` · ${p.price_label}` : ''}</Dim>
           <Button title="Subscribe" style={{ marginTop: 10 }} disabled={!ready} loading={buy.isPending && buy.variables?.id === p.id} onPress={() => buy.mutate(p)} />
         </Card>
       ))}

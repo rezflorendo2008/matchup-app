@@ -9,26 +9,34 @@
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
-      "imageWidth": 200,
+      "imageWidth": 280,
       "resizeMode": "contain",
-      "backgroundColor": "#0B1020"
+      "backgroundColor": "#0B1226"
     },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.pickarena.app",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIFileSharingEnabled": false,
+        "LSSupportsOpeningDocumentsInPlace": false
       },
       "usesAppleSignIn": true
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#2358D8"
+        "backgroundColor": "#0B1226"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.pickarena.app"
+      "package": "com.pickarena.app",
+      "allowBackup": false,
+      "blockedPermissions": [
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -48,7 +56,7 @@
         "expo-notifications",
         {
           "icon": "./assets/notification-icon.png",
-          "color": "#397BFF"
+          "color": "#0A84FF"
         }
       ],
       "expo-apple-authentication",
