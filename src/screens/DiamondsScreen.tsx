@@ -10,13 +10,13 @@ import { colors, radius } from '../theme';
 import type { Club, Tx } from '../types';
 
 const LABEL: Record<string, string> = {
-  grant: 'Diamonds added', deposit: 'Diamonds added', claim: 'Diamonds claimed',
+  grant: 'Diamonds added', deposit: 'Diamonds added', referral: 'Referral bonus 🎁', claim: 'Diamonds claimed',
   prediction: 'Prediction', win: 'Prediction won', lost: 'Prediction lost', refund: 'Returned', adjust: 'Club adjustment',
 };
 const txIcon = (type: string, n: number) => type === 'win' ? <TrophyIcon size={18} /> : n > 0 ? <ArrowUpIcon size={18} /> : n < 0 ? <ArrowDownIcon size={18} /> : <HistoryIcon size={18} />;
 const FILTERS: { key: string; label: string; types: string[] | null }[] = [
   { key: 'all', label: 'All', types: null },
-  { key: 'added', label: 'Added', types: ['grant', 'deposit'] },
+  { key: 'added', label: 'Added', types: ['grant', 'deposit', 'referral'] },
   { key: 'claimed', label: 'Claimed', types: ['claim'] },
   { key: 'predictions', label: 'Predictions', types: ['prediction', 'win', 'lost', 'refund'] },
 ];

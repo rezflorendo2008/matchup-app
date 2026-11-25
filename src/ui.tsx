@@ -159,10 +159,20 @@ export function Button({ title, onPress, kind = 'primary', loading, disabled, st
 }
 
 export function Field({ label, ...p }: TextInputProps & { label?: string }) {
+  const secure = !!p.secureTextEntry;
+  const [shown, setShown] = useState(false);
   return (
     <View style={{ marginBottom: spacing.md }}>
       {label ? <Text style={s.label}>{label}</Text> : null}
-      <TextInput placeholderTextColor={colors.dim} autoCapitalize="none" {...p} style={[s.input, p.style]} />
+      <View>
+        <TextInput placeholderTextColor={colors.dim} autoCapitalize="none" {...p} secureTextEntry={secure && !shown} style={[s.input, p.style, secure ? { paddingRight: 64 } : null]} />
+        {secure ? (
+          <Pressable onPress={() => setShown(!shown)} hitSlop={10} accessibilityRole="button" accessibilityLabel={shown ? 'Hide password' : 'Show password'}
+            style={{ position: 'absolute', right: 0, top: 0, bottom: 0, paddingHorizontal: 14, justifyContent: 'center' }}>
+            <Text style={{ color: colors.primarySoft, fontWeight: '700', fontSize: 14 }}>{shown ? 'Hide' : 'Show'}</Text>
+          </Pressable>
+        ) : null}
+      </View>
     </View>
   );
 }

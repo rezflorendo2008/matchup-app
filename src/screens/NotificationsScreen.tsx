@@ -12,9 +12,9 @@ type N = { id: number; type: string; title: string; body: string | null; data: R
 const ICON: Record<string, (c: string) => React.ReactNode> = {
   win: (c) => <TrophyIcon size={18} color={c} />, loss: (c) => <ArrowDownIcon size={18} color={c} />, refund: (c) => <ArrowUpIcon size={18} color={c} />,
   diamonds: (c) => <DiamondIcon size={18} color={c} />, match: (c) => <TargetIcon size={18} color={c} />, kyc: (c) => <CheckBadgeIcon size={18} color={c} />,
-  membership: (c) => <UsersIcon size={18} color={c} />,
+  membership: (c) => <UsersIcon size={18} color={c} />, referral: (c) => <DiamondIcon size={18} color={c} />,
 };
-const TONE: Record<string, string> = { win: colors.success, loss: colors.dim, refund: colors.primarySoft, diamonds: colors.primarySoft, match: colors.primary, kyc: colors.success, membership: colors.success };
+const TONE: Record<string, string> = { win: colors.success, loss: colors.dim, refund: colors.primarySoft, diamonds: colors.primarySoft, match: colors.primary, kyc: colors.success, membership: colors.success, referral: colors.success };
 
 export default function NotificationsScreen({ navigation }: any) {
   const qc = useQueryClient();
@@ -30,6 +30,7 @@ export default function NotificationsScreen({ navigation }: any) {
   const open = (n: N) => {
     if (n.data?.match_id) navigation.navigate('Prediction', { id: n.data.match_id });
     else if (n.type === 'kyc') navigation.navigate('Verify');
+    else if (n.type === 'referral') navigation.navigate('Referral');
     else if (n.type === 'diamonds') navigation.navigate('Diamonds');
     else if (n.type === 'membership') navigation.navigate('Clubs');
     else if (n.data?.prediction_id) navigation.navigate('History');

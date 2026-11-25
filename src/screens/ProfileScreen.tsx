@@ -83,7 +83,7 @@ export default function ProfileScreen({ navigation }: any) {
           <Dim numberOfLines={1} style={{ marginBottom: 6 }}>{user.email ?? user.phone ?? 'No contact added'}</Dim>
           {user.can_predict ? <VerifiedPill />
             : <PressScale onPress={() => navigation.navigate('Verify')} style={{ alignSelf: 'flex-start', borderRadius: radius.pill, borderWidth: 1, borderColor: colors.warning + '99', backgroundColor: colors.warning + '1A', paddingHorizontal: 10, paddingVertical: 4 }}>
-              <Text style={{ color: colors.warning, fontWeight: '800', fontSize: 12 }}>{idPending ? 'ID under review' : user.phone_verified ? 'Not verified · add ID' : 'Not verified · tap to verify'}</Text>
+              <Text style={{ color: colors.warning, fontWeight: '800', fontSize: 12 }}>{idPending ? 'ID under review' : user.phone_verified ? (user.id_required !== false ? 'Not verified · add ID' : 'Waiting for club approval') : 'Not verified · tap to verify'}</Text>
             </PressScale>}
         </View>
       </Row>
@@ -92,13 +92,14 @@ export default function ProfileScreen({ navigation }: any) {
         <Card style={{ borderColor: colors.warning }}>
           <T style={{ fontWeight: '800', marginBottom: 10 }}>Finish verifying to start predicting</T>
           <Step done={user.phone_verified} label="Confirm your email or phone" />
-          <Step done={idDone} label="Upload your ID" hint={idPending ? 'Waiting for a club owner to review it' : undefined} />
-          <Button title={user.phone_verified ? 'Upload ID' : 'Verify now'} onPress={() => navigation.navigate('Verify')} small style={{ marginTop: 6 }} />
+          {user.id_required !== false ? <Step done={idDone} label="Upload your ID" hint={idPending ? 'Waiting for a club owner to review it' : undefined} /> : <Step done={false} label="Get verified by your club owner" hint="No ID needed for your clubs" />}
+          <Button title={user.phone_verified ? (user.id_required !== false ? 'Upload ID' : 'Review status') : 'Verify now'} onPress={() => navigation.navigate('Verify')} small style={{ marginTop: 6 }} />
         </Card>
       ) : null}
 
       <SectionHeader title="My activity" />
       <Group>
+        <MenuRow icon={<DiamondIcon size={20} color={colors.success} />} label="Refer & earn" onPress={() => navigation.navigate('Referral')} />
         <MenuRow icon={<BellIcon size={20} color={colors.primarySoft} />} label="Notifications" onPress={() => navigation.navigate('Notifications')} />
         <MenuRow icon={<DiamondIcon size={20} color={colors.primarySoft} />} label="My diamonds" onPress={() => navigation.navigate('Diamonds')} />
         <MenuRow icon={<HistoryIcon size={20} color={colors.primarySoft} />} label="Prediction history" onPress={() => navigation.navigate('History')} />

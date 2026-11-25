@@ -1,6 +1,6 @@
 export interface User {
   id: number; name: string; phone: string | null; email: string | null;
-  phone_verified: boolean; kyc_status: string; can_predict: boolean; verified?: boolean; is_owner: boolean;
+  phone_verified: boolean; kyc_status: string; can_predict: boolean; verified?: boolean; id_required?: boolean; is_owner: boolean;
 }
 export interface Category { id: number; name: string; slug: string; icon: string | null }
 export interface Match {
@@ -14,7 +14,7 @@ export interface Prediction {
   status: string; reward: number | null; can_edit: boolean; created_at: string;
 }
 export interface Club {
-  id: number; name: string; club_code: string; logo: string | null; club_pays: boolean; commission_pct: number; status: string;
+  id: number; name: string; club_code: string; logo: string | null; banner?: string | null; id_required?: boolean; referral?: { text: string } | null; club_pays: boolean; commission_pct: number; status: string;
   membership: string | null; balance: number | null;
 }
 export interface ClubProfile extends Club {
