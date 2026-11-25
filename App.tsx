@@ -74,7 +74,7 @@ function Root() {
   if (!hydrated) return <ScreenSkeleton />;
 
   const linking = {
-    prefixes: ['matchup://'],
+    prefixes: ['pickarena://'],
     config: { screens: { Tabs: { screens: { Clubs: 'join/:slug' } } } },
   };
 

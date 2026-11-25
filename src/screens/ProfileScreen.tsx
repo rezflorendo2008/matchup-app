@@ -75,7 +75,7 @@ export default function ProfileScreen({ navigation }: any) {
 
       <Card style={{ marginTop: 18 }}>
         <Row style={{ marginBottom: 6 }}><ShieldIcon size={18} color={colors.success} /><T style={{ fontWeight: '800', marginLeft: 8 }}>About diamonds</T></Row>
-        <Dim>MatchUp uses virtual diamonds for fun. Diamonds have no cash value and cannot be bought, sold, withdrawn or exchanged for prizes.</Dim>
+        <Dim>PickArena uses virtual diamonds for fun. Diamonds have no cash value and cannot be bought, sold, withdrawn or exchanged for prizes.</Dim>
       </Card>
 
       <PressScale scaleTo={0.98} style={{ marginTop: 22, borderRadius: radius.md, borderWidth: 1, borderColor: colors.danger + '66', backgroundColor: colors.danger + '14', padding: 14 }}

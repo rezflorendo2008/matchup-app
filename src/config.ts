@@ -1,7 +1,7 @@
 const env = (k: string): string => ((process.env as any)[k] ?? '').toString().trim();
 
 /** Where the Laravel API lives. Set EXPO_PUBLIC_API_URL in .env, then restart with `npx expo start -c`. */
-export const BASE = (env('EXPO_PUBLIC_API_URL') || 'http://matchup.test/api/v1').replace(/\/+$/, '');
+export const BASE = (env('EXPO_PUBLIC_API_URL') || 'http://pickarena.test/api/v1').replace(/\/+$/, '');
 /** Server root (used for websocket auth). */
 export const ORIGIN = BASE.replace(/\/api\/v1$/, '');
 
