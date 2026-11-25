@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { Alert, Image } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, errMsg } from '../api';
+import { POLL_MS } from '../config';
 import { useAuth } from '../store';
 import { PhoneField } from '../components/PhoneField';
 import { Country, detectCountry, splitE164, toE164 } from '../countries';
-import { Badge, Button, Card, Chip, Dim, Field, H1, H2, Row, Screen, T, c } from '../ui';
+import { Button, Card, Chip, Dim, Field, H1, Row, Screen, T, VerifiedPill, c } from '../ui';
+import { View } from 'react-native';
 import type { User } from '../types';
 
 export default function VerifyScreen({ navigation }: any) {
@@ -39,10 +41,10 @@ export default function VerifyScreen({ navigation }: any) {
   });
   const verifyEmail = () => run(async () => { setUser(await api.post<User>('/me/email/verify', { code: code.trim() })); setSent(false); });
   const verifyPhone = () => run(async () => { setUser(await api.post<User>('/me/phone/verify', { phone: phone.trim(), code: code.trim() })); setSent(false); });
-  const pick = async () => {
-    const p = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!p.granted) return Alert.alert('Permission needed', 'Allow photo access to upload your ID.');
-    const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7 });
+  const pick = async (camera = false) => {
+    const p = camera ? await ImagePicker.requestCameraPermissionsAsync() : await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!p.granted) return Alert.alert('Permission needed', camera ? 'Allow camera access to photograph your ID.' : 'Allow photo access to upload your ID.');
+    const r = camera ? await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.7 }) : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7 });
     if (r.canceled) return;
     // Phone photos are often 5-12 MB; shrink to ~1600px JPEG (about 300-600 KB) so the upload is fast and never hits server size limits.
     try {
@@ -59,48 +61,84 @@ export default function VerifyScreen({ navigation }: any) {
     Alert.alert('Submitted', 'A club owner will review your ID.');
   });
 
+  // Status refreshes by itself, so the player sees the result as soon as an owner reviews the ID.
+  const me = useQuery({ queryKey: ['me'], queryFn: () => api.get<User>('/me'), refetchInterval: POLL_MS });
+  React.useEffect(() => { if (me.data && (me.data.kyc_status !== user.kyc_status || me.data.can_predict !== user.can_predict || me.data.phone_verified !== user.phone_verified)) setUser(me.data); }, [me.data]);
+
+  const emailDone = user.phone_verified, idDone = user.kyc_status === 'verified', idPending = user.kyc_status === 'pending', idRejected = user.kyc_status === 'rejected';
+  const doneCount = (emailDone ? 1 : 0) + (idDone ? 1 : 0);
+  const StepHead = ({ n, done, title, sub }: { n: number; done: boolean; title: string; sub?: string }) => (
+    <Row style={{ marginTop: 22, marginBottom: 10 }}>
+      <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: done ? c.good : c.brand, alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
+        <T style={{ color: '#fff', fontWeight: '800' }}>{done ? '✓' : String(n)}</T>
+      </View>
+      <View style={{ flex: 1 }}><T style={{ fontWeight: '800', fontSize: 17 }}>{title}</T>{sub ? <Dim>{sub}</Dim> : null}</View>
+    </Row>
+  );
+
   return (
     <Screen>
       <Button title="‹ Back" kind="ghost" onPress={() => navigation.goBack()} style={{ alignSelf: 'flex-start', paddingVertical: 8, paddingHorizontal: 14, marginBottom: 10 }} />
-      <H1>Verify account</H1>
-      <Row style={{ marginBottom: 6 }}><T>Status: </T><Badge text={user.can_predict ? 'verified' : user.kyc_status} /></Row>
-      <Dim>Verify your email (or phone) and ID to make predictions.</Dim>
+      <H1>Verify your account</H1>
+      {user.can_predict ? (
+        <Card style={{ borderColor: c.good }}>
+          <VerifiedPill />
+          <T style={{ marginTop: 10, fontWeight: '700' }}>You are verified and can make predictions.</T>
+          <Dim style={{ marginTop: 2 }}>Your badge shows on your profile.</Dim>
+        </Card>
+      ) : (
+        <>
+          <Dim>Two quick steps so club owners know you are a real player. About 2 minutes.</Dim>
+          <View style={{ flexDirection: 'row', gap: 6, marginTop: 12 }}>
+            {[0, 1].map((i) => <View key={i} style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: i < doneCount ? c.good : c.line }} />)}
+          </View>
+          <Dim style={{ marginTop: 6 }}>{doneCount} of 2 done</Dim>
+        </>
+      )}
 
-      <H2>1. Email or phone</H2>
-      {user.phone_verified ? <Card><T style={{ color: c.good }}>✓ {user.phone ?? user.email} verified</T></Card> : (
+      <StepHead n={1} done={emailDone} title="Confirm email or phone" sub={emailDone ? `${user.phone ?? user.email} confirmed` : 'We send a 6-digit code'} />
+      {emailDone ? null : (
         <>
           {user.email ? <Row style={{ marginBottom: 10 }}><Chip label="Email code" active={method === 'email'} onPress={() => { setMethod('email'); setSent(false); setCode(''); setDevCode(null); }} /><Chip label="SMS" active={method === 'phone'} onPress={() => { setMethod('phone'); setSent(false); setCode(''); setDevCode(null); }} /></Row> : null}
           {method === 'email' ? (
             <>
               <Dim style={{ marginBottom: 8 }}>We will email a 6-digit code to {user.email}.</Dim>
-              {devCode ? <Card style={{ borderColor: c.warn }}><T>Dev mode: your code is <T style={{ fontWeight: '800' }}>{devCode}</T></T></Card> : null}
-              {sent ? (<><Field label="6-digit code" value={code} onChangeText={setCode} keyboardType="number-pad" maxLength={6} /><Button title="Verify email" onPress={verifyEmail} loading={busy} disabled={code.length !== 6} /></>)
+              {devCode ? <Card style={{ borderColor: c.warn }}><T>Test mode: your code is <T style={{ fontWeight: '800' }}>{devCode}</T></T></Card> : null}
+              {sent ? (<><Field label="6-digit code" value={code} onChangeText={setCode} keyboardType="number-pad" maxLength={6} autoFocus /><Button title="Confirm email" onPress={verifyEmail} loading={busy} disabled={code.length !== 6} /><Button title="Send a new code" kind="ghost" style={{ marginTop: 8 }} onPress={sendEmail} loading={busy} /></>)
                 : <Button title="Email me a code" onPress={sendEmail} loading={busy} />}
             </>
           ) : (
             <>
-          <PhoneField label="Mobile number" country={country} onCountry={setCountry} national={national} onNational={setNational} editable={!sent} />
-          {devCode ? <Card style={{ borderColor: c.warn }}><T>Dev mode: your code is <T style={{ fontWeight: '800' }}>{devCode}</T></T></Card> : null}
-          {sent ? (<><Field label="6-digit code" value={code} onChangeText={setCode} keyboardType="number-pad" maxLength={6} /><Button title="Verify phone" onPress={verifyPhone} loading={busy} disabled={code.length !== 6} /></>)
-            : <Button title="Send code" onPress={sendCode} loading={busy} disabled={national.replace(/\D/g, '').length < 6} />}
+              <PhoneField label="Mobile number" country={country} onCountry={setCountry} national={national} onNational={setNational} editable={!sent} />
+              {devCode ? <Card style={{ borderColor: c.warn }}><T>Test mode: your code is <T style={{ fontWeight: '800' }}>{devCode}</T></T></Card> : null}
+              {sent ? (<><Field label="6-digit code" value={code} onChangeText={setCode} keyboardType="number-pad" maxLength={6} autoFocus /><Button title="Confirm phone" onPress={verifyPhone} loading={busy} disabled={code.length !== 6} /></>)
+                : <Button title="Send code" onPress={sendCode} loading={busy} disabled={national.replace(/\D/g, '').length < 6} />}
             </>
           )}
         </>
       )}
 
-      <H2>2. ID document</H2>
-      {user.kyc_status === 'verified' ? <Card><T style={{ color: c.good }}>✓ ID verified</T></Card>
-        : user.kyc_status === 'pending' ? <Card><T>Your ID is waiting for review by a club owner.</T></Card>
-        : !user.phone_verified ? <Dim>Verify your email or phone first.</Dim> : (
-        <>
-          {user.kyc_status === 'rejected' ? <Card style={{ borderColor: c.bad }}><T style={{ color: c.bad }}>Your last ID was rejected. Please upload a clearer photo.</T></Card> : null}
-          <Field label="Full name (as on your ID)" value={name} onChangeText={setName} autoCapitalize="words" />
-          {img ? <Image source={{ uri: img.uri }} style={{ width: '100%', height: 180, borderRadius: 12, marginBottom: 10 }} resizeMode="cover" /> : null}
-          <Button title={img ? 'Change photo' : 'Choose ID photo'} kind="ghost" onPress={pick} style={{ marginBottom: 10 }} />
-          <Button title="Submit for review" onPress={submit} loading={busy} disabled={!img || name.trim().length < 2} />
-        </>
-      )}
-      <Button title="Refresh status" kind="ghost" style={{ marginTop: 18 }} onPress={() => run(reload)} />
+      <StepHead n={2} done={idDone} title="Upload your ID" sub={idDone ? 'ID verified by your club owner' : idPending ? 'Waiting for review' : 'A club owner reviews it. Usually quick.'} />
+      {idDone ? null : !emailDone ? <Dim>Finish step 1 first.</Dim>
+        : idPending ? (
+          <Card style={{ borderColor: c.warn }}>
+            <T style={{ fontWeight: '700' }}>Your ID is being reviewed ⏳</T>
+            <Dim style={{ marginTop: 4 }}>You will get a notification as soon as a club owner approves it. Not in a club yet? Join one so an owner can review you.</Dim>
+          </Card>
+        ) : (
+          <>
+            {idRejected ? <Card style={{ borderColor: c.bad }}><T style={{ color: c.bad, fontWeight: '700' }}>Your last ID was not accepted.</T><Dim style={{ marginTop: 2 }}>Take a new photo: all four corners visible, no glare, text readable.</Dim></Card> : null}
+            <Field label="Full name (as on your ID)" value={name} onChangeText={setName} autoCapitalize="words" />
+            {img ? <Image source={{ uri: img.uri }} style={{ width: '100%', height: 190, borderRadius: 12, marginBottom: 10 }} resizeMode="cover" /> : (
+              <Card><Dim>Use a passport, driver's licence or national ID. Only club owners you join can see it, and it is deleted if you delete your account.</Dim></Card>
+            )}
+            <Row style={{ gap: 10, marginBottom: 10 }}>
+              <View style={{ flex: 1 }}><Button title="Take photo" kind="ghost" small onPress={() => pick(true)} /></View>
+              <View style={{ flex: 1 }}><Button title={img ? 'Change photo' : 'Choose photo'} kind="ghost" small onPress={() => pick(false)} /></View>
+            </Row>
+            <Button title="Submit for review" onPress={submit} loading={busy} disabled={!img || name.trim().length < 2} />
+          </>
+        )}
     </Screen>
   );
 }

@@ -88,3 +88,7 @@ export const LogOutIcon = ({ size = 18, color = colors.danger }: IconProps) => (
 );
 export const ArrowUpIcon = ({ size = 16, color = colors.success }: IconProps) => (<Svg {...base(size)}><Path d="M12 19V5M6 11l6-6 6 6" {...stroke(color)} /></Svg>);
 export const ArrowDownIcon = ({ size = 16, color = colors.danger }: IconProps) => (<Svg {...base(size)}><Path d="M12 5v14M6 13l6 6 6-6" {...stroke(color)} /></Svg>);
+
+export const BellIcon = ({ size = 22, color = colors.text }: IconProps) => (
+  <Svg {...base(size)}><Path d="M6 9a6 6 0 1 1 12 0c0 5 2 6.5 2 6.5H4S6 14 6 9ZM10 19a2 2 0 0 0 4 0" {...stroke(color)} /></Svg>
+);

@@ -47,20 +47,23 @@ export default function DiamondsScreen({ navigation }: any) {
           <>
             <View style={{ backgroundColor: colors.elevated, borderRadius: 24, padding: 20, borderWidth: 1, borderColor: colors.line, overflow: 'hidden' }}>
               <View style={{ position: 'absolute', right: -30, top: -30, width: 140, height: 140, borderRadius: 70, backgroundColor: colors.primary, opacity: 0.2 }} />
-              <Dim>Total diamonds</Dim>
+              <Dim>{approved.length > 1 ? 'Total diamonds' : club.name}</Dim>
               <Row style={{ marginTop: 6 }}>
                 <DiamondIcon size={34} color={colors.primarySoft} />
                 <Text style={{ color: colors.text, fontSize: 40, fontWeight: '800', marginLeft: 10, letterSpacing: -1 }}>{pts(total)}</Text>
               </Row>
-              <Button title="Add diamonds" onPress={() => navigation.navigate('AddDiamonds')} style={{ marginTop: 16 }} />
+              <Button title="Request diamonds" onPress={() => navigation.navigate('AddDiamonds')} style={{ marginTop: 16 }} />
+              <Dim style={{ marginTop: 10, fontSize: 12 }}>Virtual only. The club owner or an agent adds them.</Dim>
             </View>
 
-            <SectionHeader title="Clubs" />
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }}>
-              {approved.map((x) => <Chip key={x.id} label={`${x.name} · ${pts(x.balance)}`} active={x.id === club.id} onPress={() => setClubId(x.id)} />)}
-            </ScrollView>
-            <Dim style={{ marginTop: 8 }}>Diamonds are kept separately for each club. Only the club owner or their agents can add or claim them.</Dim>
-
+            {approved.length > 1 ? (
+              <>
+                <SectionHeader title="Club" />
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }}>
+                  {approved.map((x) => <Chip key={x.id} label={`${x.name} · ${pts(x.balance)}`} active={x.id === club.id} onPress={() => setClubId(x.id)} />)}
+                </ScrollView>
+              </>
+            ) : null}
             {(reqs.data ?? []).filter((r) => r.status === 'pending').map((r) => (
               <Card key={r.id} style={{ marginTop: 12, borderColor: colors.amber + '66' }}>
                 <Row style={{ justifyContent: 'space-between' }}>

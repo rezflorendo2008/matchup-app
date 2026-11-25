@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Pressable, Text, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, errMsg } from '../api';
-import { Badge, Button, Card, CardSkeleton, ClubAvatar, ClubVerificationBadge, Dim, EmptyState, ErrorBox, Field, H1, Row, Screen, SectionHeader, T, pts } from '../ui';
-import { DiamondIcon, SearchIcon, UsersIcon } from '../icons';
+import { Badge, Button, Card, CardSkeleton, ClubAvatar, ClubVerificationBadge, Dim, ErrorBox, Field, H1, Row, Screen, SectionHeader, T, pts } from '../ui';
+import { DiamondIcon, SearchIcon } from '../icons';
 import { colors, radius } from '../theme';
 import type { Club } from '../types';
 
@@ -50,11 +50,11 @@ export default function ClubsScreen({ route, navigation }: any) {
     </Row>
   );
 
-  return (
-    <Screen onRefresh={() => clubs.refetch()} refreshing={clubs.isRefetching}>
-      <H1>Clubs</H1>
+  const list = clubs.data ?? [];
+  const hasNone = list.length === 0;
+  const joinCard = (
       <Card>
-        <Row style={{ marginBottom: 10 }}><SearchIcon /><T style={{ fontWeight: '800', marginLeft: 8 }}>Join a club</T></Row>
+        <Row style={{ marginBottom: 10 }}><SearchIcon /><T style={{ fontWeight: '800', marginLeft: 8 }}>Join with a club ID</T></Row>
         <Field label="Club ID" value={code} onChangeText={setCode} autoCapitalize="characters" placeholder="Ask the club owner" />
         <Button title="Find club" kind="ghost" onPress={() => search.mutate(code)} loading={search.isPending} disabled={code.trim().length < 3} />
         {found ? (
@@ -64,25 +64,37 @@ export default function ClubsScreen({ route, navigation }: any) {
           </View>
         ) : null}
       </Card>
+  );
 
-      <SectionHeader title="My clubs" />
+  return (
+    <Screen onRefresh={() => clubs.refetch()} refreshing={clubs.isRefetching}>
+      <H1>Clubs</H1>
+      {hasNone && !clubs.isLoading && !clubs.error ? <Dim style={{ marginBottom: 12 }}>Ask your club owner for the club ID, then request to join.</Dim> : null}
+      {hasNone && !clubs.isLoading && !clubs.error ? joinCard : null}
       {clubs.isLoading ? <CardSkeleton rows={2} kind="club" /> : clubs.error ? <ErrorBox error={clubs.error} onRetry={() => clubs.refetch()} />
-        : (clubs.data?.length ?? 0) === 0 ? <EmptyState icon={<UsersIcon size={26} color={colors.dim} />} title="No clubs yet" text="Enter a club ID above to join your first club." />
-        : clubs.data!.map((cl) => (
-          <Card key={cl.id}>
-            <Row style={{ justifyContent: 'space-between' }}><Pressable style={{ flex: 1 }} onPress={() => navigation.navigate('Club', { id: cl.id })}><ClubTitle club={cl} /></Pressable>{cl.membership ? <Badge text={cl.membership} /> : null}</Row>
-            {cl.status !== 'active' ? <Dim style={{ marginTop: 6 }}>Club {cl.status}</Dim> : null}
-            {cl.membership === 'approved' ? (
-              <Row style={{ marginTop: 10, backgroundColor: colors.bg2, borderRadius: radius.md, padding: 10 }}>
-                <DiamondIcon size={18} color={colors.primarySoft} />
-                <Text style={{ color: colors.text, fontWeight: '800', fontSize: 16, marginLeft: 8 }}>{pts(cl.balance)}</Text>
-                <Dim style={{ marginLeft: 6 }}>diamonds in this club</Dim>
-              </Row>
-            ) : <Dim style={{ marginTop: 10 }}>Waiting for the club owner to verify you.</Dim>}
-            {cl.membership === 'approved' || cl.membership === 'pending'
-              ? <Button title={cl.membership === 'pending' ? 'Cancel request' : 'Leave club'} kind="ghost" small style={{ marginTop: 10 }} onPress={() => askLeave(cl)} loading={leave.isPending && leave.variables === cl.id} /> : null}
-          </Card>
-        ))}
+        : !hasNone ? (
+          <>
+            {list.map((cl) => (
+              <Card key={cl.id}>
+                <Row style={{ justifyContent: 'space-between' }}><Pressable style={{ flex: 1 }} onPress={() => navigation.navigate('Club', { id: cl.id })}><ClubTitle club={cl} /></Pressable>{cl.membership !== 'approved' && cl.membership ? <Badge text={cl.membership} /> : null}</Row>
+                {cl.status !== 'active' ? <Dim style={{ marginTop: 6 }}>Club {cl.status}</Dim> : null}
+                {cl.membership === 'approved' ? (
+                  <Row style={{ marginTop: 10, justifyContent: 'space-between' }}>
+                    <Row><DiamondIcon size={18} color={colors.primarySoft} /><Text style={{ color: colors.text, fontWeight: '800', fontSize: 16, marginLeft: 8 }}>{pts(cl.balance)}</Text><Dim style={{ marginLeft: 6 }}>diamonds</Dim></Row>
+                    <Pressable onPress={() => askLeave(cl)} hitSlop={8}><Text style={{ color: colors.dim, fontWeight: '600' }}>Leave</Text></Pressable>
+                  </Row>
+                ) : (
+                  <Row style={{ marginTop: 10, justifyContent: 'space-between' }}>
+                    <Dim style={{ flex: 1 }}>Waiting for the club owner to verify you.</Dim>
+                    <Pressable onPress={() => askLeave(cl)} hitSlop={8}><Text style={{ color: colors.dim, fontWeight: '600' }}>Cancel</Text></Pressable>
+                  </Row>
+                )}
+              </Card>
+            ))}
+            <SectionHeader title="Join another club" />
+            {joinCard}
+          </>
+        ) : null}
     </Screen>
   );
 }

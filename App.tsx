@@ -30,6 +30,7 @@ import VerifyScreen from './src/screens/VerifyScreen';
 import EventScreen from './src/screens/EventScreen';
 import SubscriptionScreen from './src/screens/SubscriptionScreen';
 import DeleteAccountScreen from './src/screens/DeleteAccountScreen';
+import NotificationsScreen from './src/screens/NotificationsScreen';
 
 const qc = new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 5000 } } });
 const nav = createNavigationContainerRef<any>();
@@ -45,7 +46,7 @@ function Tabs() {
       <Tab.Screen name="Matches" component={MatchesScreen} />
       <Tab.Screen name="Clubs" component={ClubsScreen} />
       <Tab.Screen name="Diamonds" component={DiamondsScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Account' }} />
     </Tab.Navigator>
   );
 }
@@ -90,6 +91,7 @@ function Root() {
             <Stack.Screen name="AddDiamonds" component={AddDiamondsScreen} />
             <Stack.Screen name="History" component={HistoryScreen} />
             <Stack.Screen name="Verify" component={VerifyScreen} />
+            <Stack.Screen name="Notifications" component={NotificationsScreen} />
             <Stack.Screen name="Event" component={EventScreen} />
             <Stack.Screen name="Subscription" component={SubscriptionScreen} />
             <Stack.Screen name="DeleteAccount" component={DeleteAccountScreen} />
