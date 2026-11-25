@@ -138,7 +138,8 @@ export function Screen({ children, scroll = true, onRefresh, refreshing = false,
     <SafeAreaView style={s.screen} edges={edges ?? (detail ? ['top', 'bottom'] : ['top'])}>
       {hideBar ? null : detail ? <TopBar title={title} right={right} /> : <AppHeader />}
       {footer ? (
-        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        // Android draws edge to edge (behind the keyboard), so the window no longer shrinks for it: pad on both platforms.
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
           {body}
           <View style={s.footer}>{footer}</View>
         </KeyboardAvoidingView>
