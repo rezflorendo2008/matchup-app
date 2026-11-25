@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Linking } from 'react-native';
+import { AppState, Linking } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer, DarkTheme, createNavigationContainerRef } from '@react-navigation/native';
@@ -13,6 +13,9 @@ import { registerForPush } from './src/push';
 import { clearPending, parseJoinUrl, readPending, savePending } from './src/pending';
 import { useRealtime } from './src/realtime';
 import { useAuth } from './src/store';
+import { useMaint } from './src/maintenance';
+import MaintenanceScreen from './src/screens/MaintenanceScreen';
+import { BASE } from './src/config';
 import { c, ScreenSkeleton } from './src/ui';
 import { BottomNavigation } from './src/components/BottomNavigation';
 import { colors } from './src/theme';
@@ -98,7 +101,17 @@ function Root() {
     const sub = Linking.addEventListener('url', (e) => keep(e.url));
     return () => sub.remove();
   }, [token]);
+  const maint = useMaint((s) => s.on);
+  // Ask the server once at start (and when the app returns to the foreground) so people see the maintenance page before anything fails.
+  useEffect(() => {
+    const ask = () => fetch(`${BASE}/status`, { headers: { Accept: 'application/json' } }).then((r) => r.json())
+      .then((s) => { if (s?.maintenance) useMaint.getState().set({ title: s.title, message: s.message, eta: s.eta }); }).catch(() => {});
+    ask();
+    const sub = AppState.addEventListener('change', (st) => { if (st === 'active') ask(); });
+    return () => sub.remove();
+  }, []);
   if (!hydrated) return <ScreenSkeleton />;
+  if (maint) return <MaintenanceScreen />;
 
   const linking = {
     prefixes: ['pickarena://'],

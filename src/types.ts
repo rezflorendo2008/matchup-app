@@ -39,5 +39,5 @@ export interface Home { featured_clubs: FeaturedClub[]; promos: Promo[]; ads: Pr
 export interface WalletRow { club_id: number; club: string; balance: number }
 export interface Tx { id: number; type: string; amount: number; balance_after: number; note: string | null; created_at: string }
 export interface Req { id: number; type: 'diamonds_request'; amount: number; status: string; note: string | null; created_at: string }
-export interface SubStatus { subscribed: boolean; plan: string | null; expires_at: string | null; limit: number | null; used: number; remaining: number | null }
-export interface Plan { id: number; name: string; product_id: string; monthly_match_limit: number | null; price_label: string | null }
+export interface SubStatus { subscribed: boolean; plan: string | null; expires_at: string | null; limit: number | null; used: number; remaining: number | null; club_limit: number | null; clubs_used: number }
+export interface Plan { id: number; name: string; product_id: string; monthly_match_limit: number | null; max_clubs: number | null; price_label: string | null }

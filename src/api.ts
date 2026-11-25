@@ -1,5 +1,6 @@
 import { BASE } from './config';
 import { useAuth } from './store';
+import { useMaint } from './maintenance';
 
 export class ApiError extends Error {
   status: number;
@@ -26,6 +27,7 @@ async function request<T>(method: string, path: string, body?: any, isForm = fal
   try { data = await res.json(); } catch {}
 
   if (!res.ok) {
+    if (res.status === 503 && data?.maintenance) { useMaint.getState().set({ title: data.title, message: data.message, eta: data.eta }); throw new ApiError(data.message || 'PickArena is under maintenance.', 503); }
     const first = data?.errors ? (Object.values(data.errors)[0] as string[])?.[0] : null;
     const msg: string = first || data?.message || `Request failed (${res.status})`;
     const accountBlocked = res.status === 403 && /^Your account is/i.test(msg);
