@@ -36,7 +36,7 @@ export default function ClubsScreen({ route, navigation }: any) {
     cl.membership === 'approved' ? `Your ${pts(cl.balance)} diamonds stay in the club. If you rejoin later and the owner approves, they come back. You can't predict here while you're away.` : undefined,
     [{ text: 'Stay', style: 'cancel' }, { text: cl.membership === 'pending' ? 'Cancel request' : 'Leave club', style: 'destructive', onPress: () => leave.mutate(cl.id) }]);
 
-  // opened from an owner's sign-up link (matchup://join/<slug>)
+  // opened from an owner's sign-up link (pickarena://join/<slug>)
   const slug: string | undefined = route?.params?.slug;
   useEffect(() => { if (slug) join.mutate({ slug }); }, [slug]);
 

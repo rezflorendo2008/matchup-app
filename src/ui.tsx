@@ -49,7 +49,7 @@ export function Logo({ size = 30 }: { size?: number }) {
       <View style={{ width: size, height: size, borderRadius: size * 0.3, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', marginRight: 8 }}>
         <DiamondIcon size={size * 0.62} color={colors.white} />
       </View>
-      <Text style={s.brand}>Match<Text style={{ color: colors.primarySoft }}>Up</Text></Text>
+      <Text style={s.brand}>Pick<Text style={{ color: colors.primarySoft }}>Arena</Text></Text>
     </View>
   );
 }

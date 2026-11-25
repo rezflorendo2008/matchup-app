@@ -72,7 +72,7 @@ export default function LoginScreen() {
     <Screen hideBar>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={{ marginTop: 30, marginBottom: 20 }}>
-          <H1>MatchUp</H1>
+          <H1>PickArena</H1>
           <Dim>Sign in or create an account</Dim>
         </View>
 
@@ -135,7 +135,7 @@ export default function LoginScreen() {
           <SocialButtons onError={(e) => setErr(e ?? null)} />
         </View>
 
-        <Dim style={{ textAlign: 'center', marginTop: 28 }}>MatchUp uses virtual diamonds only. Diamonds have no cash value.</Dim>
+        <Dim style={{ textAlign: 'center', marginTop: 28 }}>PickArena uses virtual diamonds only. Diamonds have no cash value.</Dim>
         <Dim style={{ textAlign: 'center', marginTop: 10 }}>Server: {BASE}</Dim>
       </KeyboardAvoidingView>
     </Screen>

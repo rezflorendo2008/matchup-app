@@ -1,4 +1,4 @@
-/** Central design tokens for MatchUp. Change a value here and the whole app follows. */
+/** Central design tokens for PickArena. Change a value here and the whole app follows. */
 export const colors = {
   bg: '#0B1020',
   bg2: '#11192B',

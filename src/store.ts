@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import * as SecureStore from 'expo-secure-store';
 import type { User } from './types';
 
-const KEY = 'matchup.auth';
+const KEY = 'pickarena.auth';
 
 interface AuthState {
   hydrated: boolean; token: string | null; user: User | null;
