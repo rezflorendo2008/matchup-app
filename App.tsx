@@ -19,6 +19,7 @@ import { BASE } from './src/config';
 import { c, ScreenSkeleton } from './src/ui';
 import { BottomNavigation } from './src/components/BottomNavigation';
 import { colors } from './src/theme';
+import { warnIfDeviceCompromised } from './src/security';
 import type { Club, User } from './src/types';
 
 import LoginScreen from './src/screens/LoginScreen';
@@ -147,6 +148,7 @@ function Root() {
 }
 
 export default function App() {
+  useEffect(() => { warnIfDeviceCompromised(); }, []);
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={qc}>
