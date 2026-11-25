@@ -8,7 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from './api';
 import { POLL_MS } from './config';
 import { colors, font, radius, shadow, spacing } from './theme';
-import { AlertIcon, CheckBadgeIcon, DiamondIcon, PlusIcon } from './icons';
+import { AlertIcon, BellIcon, CheckBadgeIcon, DiamondIcon, PlusIcon } from './icons';
 import type { Club } from './types';
 
 /** Colour aliases kept for the existing screens; new code should import from ./theme. */
@@ -68,11 +68,39 @@ export function DiamondWalletButton() {
   );
 }
 
+/** Bell with an unread counter; opens the notification centre. */
+export function NotificationBell() {
+  const nav = useNavigation<any>();
+  const q = useQuery({ queryKey: ['notifications', 'unread'], queryFn: () => api.get<{ unread: number }>('/notifications/unread'), refetchInterval: POLL_MS });
+  const n = q.data?.unread ?? 0;
+  return (
+    <PressScale onPress={() => nav.navigate('Notifications')} accessibilityLabel={n ? `Notifications, ${n} unread` : 'Notifications'} hitSlop={8}
+      style={{ width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line, marginRight: 8 }}>
+      <BellIcon size={20} color={colors.text} />
+      {n > 0 ? <View style={{ position: 'absolute', top: -2, right: -2, minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 4, backgroundColor: colors.danger, alignItems: 'center', justifyContent: 'center' }}>
+        <Text style={{ color: '#fff', fontSize: 10, fontWeight: '800' }}>{n > 9 ? '9+' : n}</Text></View> : null}
+    </PressScale>
+  );
+}
+
+/** "Verified" pill shown next to a player's name once email/phone and ID are both verified. */
+export function VerifiedPill({ small }: { small?: boolean }) {
+  return (
+    <View accessibilityLabel="Verified account" style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', backgroundColor: colors.success + '22', borderColor: colors.success + '88', borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: small ? 8 : 10, paddingVertical: small ? 2 : 4 }}>
+      <CheckBadgeIcon size={small ? 13 : 15} color={colors.success} />
+      <Text style={{ color: colors.success, fontWeight: '800', fontSize: small ? 11 : 12, marginLeft: 4 }}>Verified</Text>
+    </View>
+  );
+}
+
 export function AppHeader() {
   return (
     <View style={s.bar}>
       <Logo />
-      <DiamondWalletButton />
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <NotificationBell />
+        <DiamondWalletButton />
+      </View>
     </View>
   );
 }

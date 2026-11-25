@@ -1,6 +1,6 @@
 export interface User {
   id: number; name: string; phone: string | null; email: string | null;
-  phone_verified: boolean; kyc_status: string; can_predict: boolean; is_owner: boolean;
+  phone_verified: boolean; kyc_status: string; can_predict: boolean; verified?: boolean; is_owner: boolean;
 }
 export interface Category { id: number; name: string; slug: string; icon: string | null }
 export interface Match {

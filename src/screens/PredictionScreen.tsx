@@ -19,6 +19,7 @@ export default function PredictionScreen({ route, navigation }: any) {
   const [amount, setAmount] = useState('');
   const [editing, setEditing] = useState<Prediction | null>(null);
   const [pending, setPending] = useState<Prediction | null>(null);
+  const [showPool, setShowPool] = useState(false);
 
   const mq = useQuery({ queryKey: ['match', id], queryFn: () => api.get<Match>(`/matches/${id}`), refetchInterval: POLL_MS });
   const clubs = useQuery({ queryKey: ['clubs'], queryFn: () => api.get<Club[]>('/clubs') });
@@ -89,36 +90,7 @@ export default function PredictionScreen({ route, navigation }: any) {
         })}
       </Row>
 
-      <Card style={{ marginTop: 12, borderColor: Number(m.my_diamonds ?? 0) > 0 ? c.brand : c.line }}>
-        <Row style={{ justifyContent: 'space-between' }}>
-          <T style={{ fontWeight: '800' }}>My total predicted</T>
-          <T style={{ fontWeight: '800', color: c.brand }}>{pts(m.my_diamonds ?? 0)} 💎</T>
-        </Row>
-      </Card>
-      <Card style={{ marginTop: 0 }}>
-        <T style={{ fontWeight: '800' }}>Who predicted what</T>
-        <Dim style={{ fontSize: 12, marginTop: 2 }}>{pool ? `${pool.players} player${pool.players === 1 ? '' : 's'} · ${pool.count} prediction${pool.count === 1 ? '' : 's'}` : 'Loading…'}</Dim>
-        <Row style={{ alignItems: 'flex-start', marginTop: 8 }}>
-          {(['a', 'b'] as const).map((k, i) => {
-            const col = k === 'a' ? c.a : c.b;
-            const list = (pool?.items ?? []).filter((p) => p.side === k);
-            return (
-              <View key={k} style={{ flex: 1, marginLeft: i ? 10 : 0 }}>
-                <Text style={{ color: col, fontSize: 12, fontWeight: '800' }} numberOfLines={1}>{k === 'a' ? m.side_a : m.side_b} ({list.length})</Text>
-                <Text style={{ color: col, fontSize: 13, fontWeight: '800', marginTop: 2 }}>{pts(k === 'a' ? pool?.total_a ?? 0 : pool?.total_b ?? 0)} 💎 total</Text>
-                <ScrollView nestedScrollEnabled style={{ maxHeight: 130, marginTop: 4, borderTopWidth: 2, borderTopColor: col }} showsVerticalScrollIndicator>
-                  {list.length === 0 ? <Dim style={{ fontSize: 11, paddingVertical: 6 }}>{pool ? 'No one yet' : 'Loading…'}</Dim> : list.map((p) => (
-                    <Row key={p.id} style={{ justifyContent: 'space-between', paddingVertical: 4 }}>
-                      <Text style={{ color: p.mine ? c.text : c.dim, fontSize: 11, fontWeight: p.mine ? '800' : '500', flex: 1, marginRight: 4 }} numberOfLines={1}>{p.name}{p.mine ? ' (you)' : ''}</Text>
-                      <Text style={{ color: col, fontSize: 11, fontWeight: '700' }}>{pts(p.amount)} 💎</Text>
-                    </Row>
-                  ))}
-                </ScrollView>
-              </View>
-            );
-          })}
-        </Row>
-      </Card>
+      {Number(m.my_diamonds ?? 0) > 0 ? <Dim style={{ marginTop: 10, textAlign: 'center' }}>You have <T style={{ fontWeight: '800', color: c.brand }}>{pts(m.my_diamonds ?? 0)} 💎</T> on this match</Dim> : null}
 
       {m.status === 'settled' ? (() => {
         const won = mine.filter((b) => b.status === 'won');
@@ -142,13 +114,26 @@ export default function PredictionScreen({ route, navigation }: any) {
         <Card><Dim>Predictions are {m.status === 'paused' ? 'paused' : m.status === 'upcoming' ? 'not open yet' : 'closed'} for this match.</Dim></Card>
       ) : (
         <>
-          <H2>{editing ? `Change prediction #${editing.id}` : 'Your prediction'}</H2>
-          <Dim style={{ marginBottom: 8 }}>Your diamonds at {m.club}: {pts(balance)}</Dim>
-          <Field label="Diamonds to use" value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder="0.00" />
-          <Row style={{ marginBottom: 12 }}>{[10, 50, 100, 500].map((q) => <Chip key={q} label={String(q)} onPress={() => setAmount(String(q))} />)}</Row>
-          <Button title={editing ? 'Review change' : 'Predict'} onPress={() => place.mutate()} loading={place.isPending} disabled={!valid} />
-          {editing ? <Button title="Stop editing" kind="ghost" style={{ marginTop: 8 }} onPress={reset} /> : null}
-          {amt > balance && valid ? <Row style={{ marginTop: 10 }}><Dim style={{ color: c.warn, flex: 1 }}>You don't have enough diamonds for this.</Dim><Button title="Add diamonds" kind="ghost" style={{ paddingVertical: 8, paddingHorizontal: 14 }} onPress={() => navigation.navigate('AddDiamonds')} /></Row> : null}
+          <H2>{editing ? `Change prediction #${editing.id}` : 'Make your prediction'}</H2>
+          <Card>
+            <Row style={{ marginBottom: 10 }}>
+              <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: side ? c.good : c.brand, alignItems: 'center', justifyContent: 'center', marginRight: 10 }}><Text style={{ color: '#fff', fontWeight: '800', fontSize: 12 }}>{side ? '✓' : '1'}</Text></View>
+              <T style={{ fontWeight: '700', flex: 1 }}>{side ? `You picked ${name(side)}` : 'Tap a team above to pick a side'}</T>
+            </Row>
+            <Row style={{ marginBottom: 6 }}>
+              <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: c.brand, alignItems: 'center', justifyContent: 'center', marginRight: 10 }}><Text style={{ color: '#fff', fontWeight: '800', fontSize: 12 }}>2</Text></View>
+              <T style={{ fontWeight: '700', flex: 1 }}>Choose diamonds</T>
+              <Dim>You have {pts(balance)} 💎</Dim>
+            </Row>
+            <Field label="" value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder="0" />
+            <Row style={{ marginBottom: 12 }}>
+              {[10, 50, 100, 500].map((q) => <Chip key={q} label={String(q)} active={amt === q} onPress={() => setAmount(String(q))} />)}
+              {Number(balance) > 0 ? <Chip label="Max" onPress={() => setAmount(String(m.max_diamonds ? Math.min(Number(balance), Number(m.max_diamonds)) : Math.floor(Number(balance))))} /> : null}
+            </Row>
+            <Button title={editing ? 'Review change' : valid ? `Predict ${name(side!)} · ${pts(amt)} 💎` : 'Predict'} onPress={() => place.mutate()} loading={place.isPending} disabled={!valid} />
+            {editing ? <Button title="Stop editing" kind="ghost" style={{ marginTop: 8 }} onPress={reset} /> : null}
+            {amt > balance && valid ? <Row style={{ marginTop: 10 }}><Dim style={{ color: c.warn, flex: 1 }}>You don't have enough diamonds for this.</Dim><Button title="Request diamonds" kind="ghost" style={{ paddingVertical: 8, paddingHorizontal: 14 }} onPress={() => navigation.navigate('AddDiamonds')} /></Row> : null}
+          </Card>
         </>
       )}
 
@@ -168,6 +153,34 @@ export default function PredictionScreen({ route, navigation }: any) {
           ) : null}
         </Card>
       ))}
+
+      <Card style={{ marginTop: 12 }} onPress={() => setShowPool(!showPool)}>
+        <Row style={{ justifyContent: 'space-between' }}>
+          <View><T style={{ fontWeight: '800' }}>Who predicted what</T>
+          <Dim style={{ fontSize: 12, marginTop: 2 }}>{pool ? `${pool.players} player${pool.players === 1 ? '' : 's'} · ${pool.count} prediction${pool.count === 1 ? '' : 's'}` : 'Loading…'}</Dim></View>
+          <Dim>{showPool ? 'Hide' : 'Show'}</Dim>
+        </Row>
+        {showPool ? <Row style={{ alignItems: 'flex-start', marginTop: 8 }}>
+          {(['a', 'b'] as const).map((k, i) => {
+            const col = k === 'a' ? c.a : c.b;
+            const list = (pool?.items ?? []).filter((p) => p.side === k);
+            return (
+              <View key={k} style={{ flex: 1, marginLeft: i ? 10 : 0 }}>
+                <Text style={{ color: col, fontSize: 12, fontWeight: '800' }} numberOfLines={1}>{k === 'a' ? m.side_a : m.side_b} ({list.length})</Text>
+                <Text style={{ color: col, fontSize: 13, fontWeight: '800', marginTop: 2 }}>{pts(k === 'a' ? pool?.total_a ?? 0 : pool?.total_b ?? 0)} 💎 total</Text>
+                <ScrollView nestedScrollEnabled style={{ maxHeight: 130, marginTop: 4, borderTopWidth: 2, borderTopColor: col }} showsVerticalScrollIndicator>
+                  {list.length === 0 ? <Dim style={{ fontSize: 11, paddingVertical: 6 }}>{pool ? 'No one yet' : 'Loading…'}</Dim> : list.map((p) => (
+                    <Row key={p.id} style={{ justifyContent: 'space-between', paddingVertical: 4 }}>
+                      <Text style={{ color: p.mine ? c.text : c.dim, fontSize: 11, fontWeight: p.mine ? '800' : '500', flex: 1, marginRight: 4 }} numberOfLines={1}>{p.name}{p.mine ? ' (you)' : ''}</Text>
+                      <Text style={{ color: col, fontSize: 11, fontWeight: '700' }}>{pts(p.amount)} 💎</Text>
+                    </Row>
+                  ))}
+                </ScrollView>
+              </View>
+            );
+          })}
+        </Row> : null}
+      </Card>
 
       <Modal visible={!!pending} transparent animationType="fade" onRequestClose={cancelPending}>
         <View style={{ flex: 1, backgroundColor: '#000a', justifyContent: 'center', padding: 24 }}>

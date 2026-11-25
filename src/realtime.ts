@@ -25,6 +25,7 @@ export function useRealtime(clubIds: number[]) {
       });
       const refresh = (keys: string[]) => keys.forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
       echo.private(`user.${userId}`).listen('.user.updated', (e: any) => {
+        refresh(['notifications']);
         if (e.kind === 'wallet') refresh(['wallets', 'tx']);
         else if (e.kind === 'prediction') refresh(['predictions', 'matches', 'wallets']);
         else if (e.kind === 'membership') refresh(['clubs', 'matches', 'home']);
