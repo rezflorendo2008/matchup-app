@@ -2,6 +2,7 @@ import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { MatchStatusBadge, Row, whenShort } from '../ui';
 import { MyPredicted, TeamPlayerCard, type OpenMatch } from './MatchCards';
+import { WatchTag } from './MatchVideo';
 import { colors } from '../theme';
 import type { Match } from '../types';
 
@@ -16,7 +17,12 @@ export function MatchRow({ m, onOpen }: { m: Match; onOpen: OpenMatch }) {
           <Text style={{ color: colors.text, fontWeight: '700', fontSize: 16, flex: 1, marginRight: 8 }} numberOfLines={2}>{m.title}</Text>
           <MatchStatusBadge status={m.status} compact />
         </Row>
-        {m.scheduled_at ? <Text style={{ color: colors.dim, fontSize: 12.5, marginTop: 2 }}>{whenShort(m.scheduled_at)}</Text> : null}
+        {m.scheduled_at || m.live_video ? (
+          <Row style={{ justifyContent: 'space-between', marginTop: 2 }}>
+            <Text style={{ color: colors.dim, fontSize: 12.5 }}>{m.scheduled_at ? whenShort(m.scheduled_at) : ''}</Text>
+            <WatchTag m={m} />
+          </Row>
+        ) : null}
       </Pressable>
       <Row style={{ marginTop: 10, alignItems: 'stretch' }}>
         <TeamPlayerCard m={m} k="a" onOpen={onOpen} compact />

@@ -4,6 +4,7 @@ import { ClubAvatar, ClubVerificationBadge, MatchStatusBadge, PressScale, Row, T
 import { CalendarIcon, ChevronRightIcon } from '../icons';
 import { colors, radius, spacing } from '../theme';
 import type { Match } from '../types';
+import { WatchTag } from './MatchVideo';
 
 export type OpenMatch = (m: Match, side?: 'a' | 'b') => void;
 
@@ -61,7 +62,7 @@ export function LiveMatchCard({ m, onOpen }: { m: Match; onOpen: OpenMatch }) {
       <Pressable onPress={() => onOpen(m)} accessibilityRole="button" accessibilityLabel={`Open ${m.title}`}>
         <Text style={{ color: colors.text, fontSize: 16, fontWeight: '800', marginTop: 6, letterSpacing: -0.2 }} numberOfLines={1}>{m.title}</Text>
       </Pressable>
-      <View style={{ marginTop: 3 }}><ClubLine m={m} size={16} /></View>
+      <Row style={{ marginTop: 3, justifyContent: 'space-between' }}><View style={{ flexShrink: 1 }}><ClubLine m={m} size={16} /></View><WatchTag m={m} /></Row>
       <Row style={{ marginTop: 10, alignItems: 'stretch' }}>
         <TeamPlayerCard m={m} k="a" onOpen={onOpen} dense />
         <View style={{ width: 28, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: colors.dim, fontWeight: '800', fontSize: 11 }}>VS</Text></View>
