@@ -81,7 +81,9 @@ export default function ProfileScreen({ navigation }: any) {
         <TeamAvatar name={user.name} size={60} />
         <View style={{ flex: 1, marginLeft: 14 }}>
           <Text style={{ color: colors.text, fontWeight: '800', fontSize: 20 }} numberOfLines={1}>{user.name}</Text>
-          <Dim numberOfLines={1} style={{ marginBottom: 6 }}>{user.email ?? user.phone ?? 'No contact added'}</Dim>
+          <Dim numberOfLines={1}>{user.email ?? user.phone ?? 'No contact added'}</Dim>
+          {/* the club owner can find this player by this ID when adding diamonds */}
+          <Dim style={{ marginTop: 2, marginBottom: 6, fontSize: 12.5 }}>Player ID <Text selectable style={{ color: colors.text, fontWeight: '800' }}>#{user.id}</Text> · give this to your club owner</Dim>
           {user.can_predict ? <VerifiedPill />
             : <PressScale onPress={() => navigation.navigate('Verify')} style={{ alignSelf: 'flex-start', borderRadius: radius.pill, borderWidth: 1, borderColor: colors.warning + '99', backgroundColor: colors.warning + '1A', paddingHorizontal: 10, paddingVertical: 4 }}>
               <Text style={{ color: colors.warning, fontWeight: '800', fontSize: 12 }}>{idPending ? 'ID under review' : user.phone_verified ? (user.id_required !== false ? 'Not verified · add ID' : 'Waiting for club approval') : 'Not verified · tap to verify'}</Text>
