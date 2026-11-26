@@ -14,7 +14,7 @@ import type { Prediction, Club, Match } from '../types';
 
 type Side = 'a' | 'b';
 type Participants = { total: number; total_a: number; total_b: number; count: number; players: number;
-  items: { id: number; name: string; side: Side; amount: number; mine: boolean; status: string; unmatched_refund?: number | null; matched_with?: { name: string; amount: number }[] }[] };
+  items: { id: number; name: string; side: Side; amount: number; mine: boolean; status: string; unmatched_refund?: number | null; matched_with?: { name: string; amount: number }[]; position?: number | null; confirmed_at?: string | null }[] };
 
 const sideColor = (k: Side) => (k === 'a' ? c.a : c.b);
 const QUICK = [10, 50, 100, 500];
@@ -83,6 +83,7 @@ function PoolCard({ m, pool }: { m: Match; pool?: Participants }) {
           <Text style={{ color: c.b, fontSize: 12, fontWeight: '800', flex: 1, textAlign: 'right' }} numberOfLines={1}>{sum ? `(${100 - pa}%) ` : ''}{pts(b)} 💎 · {m.side_b}</Text>
         </Row>
       </Pressable>
+      {open ? <Dim style={{ fontSize: 11.5, marginTop: 10 }}>In order of who predicted first. The first player on each side is matched first.</Dim> : null}
       {open ? (
         <Row style={{ alignItems: 'flex-start', marginTop: 10 }}>
           {(['a', 'b'] as const).map((k, i) => {
@@ -94,9 +95,10 @@ function PoolCard({ m, pool }: { m: Match; pool?: Participants }) {
                   {list.length === 0 ? <Dim style={{ fontSize: 12, paddingVertical: 8 }}>{pool ? 'No one yet' : 'Loading…'}</Dim> : list.map((p) => (
                     <View key={p.id} style={{ paddingVertical: 5 }}>
                       <Row style={{ justifyContent: 'space-between' }}>
-                        <Text style={{ color: p.mine ? c.text : c.dim, fontSize: 12, fontWeight: p.mine ? '800' : '500', flex: 1, marginRight: 4 }} numberOfLines={1}>{p.name}{p.mine ? ' (you)' : ''}</Text>
+                        <Text style={{ color: p.mine ? c.text : c.dim, fontSize: 12, fontWeight: p.mine ? '800' : '500', flex: 1, marginRight: 4 }} numberOfLines={1}>{p.position ? `${p.position}. ` : ''}{p.name}{p.mine ? ' (you)' : ''}</Text>
                         <Text style={{ color: col, fontSize: 12, fontWeight: '700' }}>{pts(Number(p.amount) + Number(p.unmatched_refund ?? 0))}</Text>
                       </Row>
+                      {p.confirmed_at ? <Text style={{ color: c.dim, fontSize: 10.5, marginTop: 1 }}>{new Date(p.confirmed_at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit' })}</Text> : null}
                       {p.matched_with?.length ? <Text style={{ color: c.dim, fontSize: 10.5, marginTop: 1 }}>vs {p.matched_with.map((x) => `${x.name} ${pts(x.amount)}`).join(', ')}</Text> : null}
                       {Number(p.unmatched_refund) > 0 ? <Text style={{ color: c.dim, fontSize: 10.5, marginTop: 1 }}>↩️ {pts(p.unmatched_refund)} returned</Text> : null}
                     </View>
