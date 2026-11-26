@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Share, Text, View } from 'react-native';
+import { SvgXml } from 'react-native-svg';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../api';
 import { POLL_MS } from '../config';
@@ -9,7 +10,7 @@ import { colors, radius } from '../theme';
 
 type Overview = {
   code: string; total_earned: number;
-  clubs: { club_id: number; name: string; logo: string | null; enabled: boolean; reward_text: string; link: string; club_code: string; earned: number; friends: number; verified: number;
+  clubs: { club_id: number; name: string; logo: string | null; enabled: boolean; reward_text: string; link: string; qr_svg?: string | null; club_code: string; earned: number; friends: number; verified: number;
     friend_list: { name: string; status: string; earned: number; joined_at: string }[];
     earnings: { type: 'signup' | 'win'; amount: number; friend: string; created_at: string }[] }[];
 };
@@ -57,6 +58,17 @@ export default function ReferralScreen({ route, navigation }: any) {
                     <Dim style={{ fontSize: 12 }}>Your referral code</Dim>
                     <Text selectable style={{ color: colors.text, fontWeight: '800', fontSize: 24, letterSpacing: 3, marginTop: 2 }}>{q.data!.code}</Text>
                   </View>
+                  {cl.qr_svg ? (
+                    <View style={{ marginTop: 14, alignItems: 'center', backgroundColor: colors.bg2, borderRadius: radius.md, padding: 14, borderWidth: 1, borderColor: colors.line }}>
+                      <T style={{ fontWeight: '800' }}>Scan to join</T>
+                      {/* white square with a quiet zone so any phone camera can read it on the dark screen */}
+                      <View accessible accessibilityRole="image" accessibilityLabel={`QR code to join ${cl.name} with your referral code`}
+                        style={{ marginTop: 10, backgroundColor: '#fff', borderRadius: 12, padding: 8 }}>
+                        <SvgXml xml={cl.qr_svg} width={220} height={220} />
+                      </View>
+                      <Dim style={{ marginTop: 10, textAlign: 'center', fontSize: 12 }}>Friends scan this with their phone camera to sign up in {cl.name} with your code.</Dim>
+                    </View>
+                  ) : null}
                   <Button title="Share my link" onPress={share} style={{ marginTop: 12 }} />
                   <Dim style={{ marginTop: 8, fontSize: 12 }}>Friends can also enter your code when they join with club ID {cl.club_code}. You earn once the club owner verifies them.</Dim>
                 </>
