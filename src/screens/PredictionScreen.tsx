@@ -6,6 +6,7 @@ import { POLL_MS } from '../config';
 import { useAuth } from '../store';
 import { Badge, Button, Card, CardSkeleton, Chip, Dim, ErrorBox, MatchStatusBadge, PressScale, Row, Screen, SectionHeader, T, TeamAvatar, c, pts, whenShort } from '../ui';
 import { ClubLine } from '../components/MatchCards';
+import { MatchVideo } from '../components/MatchVideo';
 import { CheckIcon, ChevronDownIcon, ChevronRightIcon } from '../icons';
 import { colors, radius, spacing } from '../theme';
 import type { Prediction, Club, Match } from '../types';
@@ -189,6 +190,7 @@ export default function PredictionScreen({ route, navigation }: any) {
         {max ? <Fact text={`Max ${pts(max)} 💎`} /> : null}
         {m.scheduled_at ? <Fact text={whenShort(m.scheduled_at)} /> : null}
       </Row>
+      {m.live_video ? <MatchVideo video={m.live_video} /> : null}
 
       {/* Step 1: pick a side */}
       {canPredict ? <SectionHeader title={editing ? '1. Change your pick' : '1. Pick who wins'} /> : <View style={{ height: spacing.lg }} />}
