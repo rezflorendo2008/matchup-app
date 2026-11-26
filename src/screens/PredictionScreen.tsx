@@ -14,7 +14,7 @@ import type { Prediction, Club, Match } from '../types';
 
 type Side = 'a' | 'b';
 type Participants = { total: number; total_a: number; total_b: number; count: number; players: number;
-  items: { id: number; name: string; side: Side; amount: number; mine: boolean; status: string }[] };
+  items: { id: number; name: string; side: Side; amount: number; mine: boolean; status: string; unmatched_refund?: number | null; matched_with?: { name: string; amount: number }[] }[] };
 
 const sideColor = (k: Side) => (k === 'a' ? c.a : c.b);
 const QUICK = [10, 50, 100, 500];
@@ -90,12 +90,16 @@ function PoolCard({ m, pool }: { m: Match; pool?: Participants }) {
             const list = (pool?.items ?? []).filter((p) => p.side === k);
             return (
               <View key={k} style={{ flex: 1, marginLeft: i ? 10 : 0 }}>
-                <ScrollView nestedScrollEnabled style={{ maxHeight: 160, borderTopWidth: 2, borderTopColor: col }}>
+                <ScrollView nestedScrollEnabled style={{ maxHeight: 260, borderTopWidth: 2, borderTopColor: col }}>
                   {list.length === 0 ? <Dim style={{ fontSize: 12, paddingVertical: 8 }}>{pool ? 'No one yet' : 'Loading…'}</Dim> : list.map((p) => (
-                    <Row key={p.id} style={{ justifyContent: 'space-between', paddingVertical: 5 }}>
-                      <Text style={{ color: p.mine ? c.text : c.dim, fontSize: 12, fontWeight: p.mine ? '800' : '500', flex: 1, marginRight: 4 }} numberOfLines={1}>{p.name}{p.mine ? ' (you)' : ''}</Text>
-                      <Text style={{ color: col, fontSize: 12, fontWeight: '700' }}>{pts(p.amount)}</Text>
-                    </Row>
+                    <View key={p.id} style={{ paddingVertical: 5 }}>
+                      <Row style={{ justifyContent: 'space-between' }}>
+                        <Text style={{ color: p.mine ? c.text : c.dim, fontSize: 12, fontWeight: p.mine ? '800' : '500', flex: 1, marginRight: 4 }} numberOfLines={1}>{p.name}{p.mine ? ' (you)' : ''}</Text>
+                        <Text style={{ color: col, fontSize: 12, fontWeight: '700' }}>{pts(Number(p.amount) + Number(p.unmatched_refund ?? 0))}</Text>
+                      </Row>
+                      {p.matched_with?.length ? <Text style={{ color: c.dim, fontSize: 10.5, marginTop: 1 }}>vs {p.matched_with.map((x) => `${x.name} ${pts(x.amount)}`).join(', ')}</Text> : null}
+                      {Number(p.unmatched_refund) > 0 ? <Text style={{ color: c.dim, fontSize: 10.5, marginTop: 1 }}>↩️ {pts(p.unmatched_refund)} returned</Text> : null}
+                    </View>
                   ))}
                 </ScrollView>
               </View>
@@ -271,13 +275,21 @@ export default function PredictionScreen({ route, navigation }: any) {
       {mine.map((b) => (
         <Card key={b.id} style={{ borderLeftWidth: 3, borderLeftColor: sideColor(b.side) }}>
           <Row style={{ justifyContent: 'space-between' }}>
-            <T style={{ fontWeight: '800', flex: 1, marginRight: 8 }} numberOfLines={1}>{name(b.side)} · {pts(b.amount)} 💎</T>
+            <T style={{ fontWeight: '800', flex: 1, marginRight: 8 }} numberOfLines={1}>{name(b.side)} · {pts(b.original_amount ?? b.amount)} 💎</T>
             <Badge text={b.status} />
           </Row>
           <Dim style={{ marginTop: 2 }}>
             {b.status === 'won' ? `Won +${pts(b.reward)} 💎` : b.status === 'lost' ? `${pts(b.matched_amount)} 💎 used` : b.status === 'refunded' ? 'Diamonds returned'
-              : Number(b.matched_amount) >= Number(b.amount) ? 'Fully matched' : `Matched ${pts(b.matched_amount)} of ${pts(b.amount)} · waiting for players`}
+              : Number(b.matched_amount) >= Number(b.original_amount ?? b.amount) ? 'Fully matched'
+              : Number(b.unmatched_refund) > 0 ? `Matched ${pts(b.matched_amount)} of ${pts(b.original_amount ?? b.amount)}` : `Matched ${pts(b.matched_amount)} of ${pts(b.amount)} · waiting for players`}
           </Dim>
+          {b.matched_with?.length ? (
+            <Text style={{ color: c.text, fontSize: 13, marginTop: 6, lineHeight: 19 }}>
+              <Text style={{ color: c.dim }}>Matched with </Text>
+              {b.matched_with.map((x, i) => <Text key={i}>{i ? ', ' : ''}<Text style={{ fontWeight: '800' }}>{x.name}</Text> {pts(x.amount)} 💎</Text>)}
+            </Text>
+          ) : null}
+          {Number(b.unmatched_refund) > 0 ? <Dim style={{ marginTop: 4 }}>↩️ {pts(b.unmatched_refund)} 💎 not matched · returned to you</Dim> : null}
           {b.can_edit && open ? (
             <Row style={{ marginTop: 10, gap: 8 }}>
               <Button style={{ flex: 1 }} small kind="ghost" title={editing?.id === b.id ? 'Editing…' : 'Change'} disabled={editing?.id === b.id}

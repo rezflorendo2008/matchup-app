@@ -19,6 +19,8 @@ export interface Match {
 export interface Prediction {
   id: number; match_id: number; match: string; club_id: number; side: 'a' | 'b'; amount: number; matched_amount: number;
   status: string; reward: number | null; can_edit: boolean; created_at: string;
+  /** player vs player: who it was matched against (in order), what came back unmatched, and the amount first predicted */
+  matched_with?: { name: string; amount: number; self?: boolean }[]; unmatched_refund?: number | null; original_amount?: number;
 }
 export interface Club {
   id: number; name: string; club_code: string; logo: string | null; banner?: string | null; id_required?: boolean; referral?: { text: string } | null; club_pays: boolean; commission_pct: number; status: string;
