@@ -34,7 +34,7 @@ function SidePicker({ m, k, selected, canPick, onPick }: { m: Match; k: Side; se
   return (
     <PressScale onPress={canPick ? onPick : undefined} scaleTo={0.96} accessibilityLabel={`${canPick ? 'Pick' : ''} ${name}`.trim()}
       style={{
-        flex: 1, alignItems: 'center', paddingVertical: 16, paddingHorizontal: 8, borderRadius: radius.lg,
+        flex: 1, alignItems: 'center', paddingVertical: 12, paddingHorizontal: 8, borderRadius: radius.lg,
         backgroundColor: selected ? col + '1F' : won ? colors.success + '14' : colors.card,
         borderWidth: selected || won ? 2 : 1, borderColor: selected ? col : won ? colors.success : colors.line,
       }}>
@@ -43,9 +43,9 @@ function SidePicker({ m, k, selected, canPick, onPick }: { m: Match; k: Side; se
           <CheckIcon size={14} />
         </View>
       ) : null}
-      <TeamAvatar name={name} color={col} size={52} />
-      {score != null ? <Text style={{ color: c.text, fontWeight: '800', fontSize: 32, marginTop: 6, letterSpacing: -0.5 }}>{score}</Text> : null}
-      <Text style={{ color: c.text, fontWeight: '800', fontSize: 15, marginTop: 8, textAlign: 'center' }} numberOfLines={2}>{name}</Text>
+      <TeamAvatar name={name} color={col} size={44} />
+      {score != null ? <Text style={{ color: c.text, fontWeight: '800', fontSize: 26, marginTop: 4, letterSpacing: -0.5 }}>{score}</Text> : null}
+      <Text style={{ color: c.text, fontWeight: '800', fontSize: 14, marginTop: 6, textAlign: 'center' }} numberOfLines={2}>{name}</Text>
       <Text style={{ color: won ? colors.success : col, fontWeight: '700', fontSize: 13, marginTop: 3 }}>
         {won ? '🏆 Won' : m.mode === 'club' ? `×${(k === 'a' ? m.multiplier_a : m.multiplier_b) ?? '-'}` : `${pts(k === 'a' ? m.open_a : m.open_b)} 💎 open`}
       </Text>
@@ -183,7 +183,7 @@ export default function PredictionScreen({ route, navigation }: any) {
         </Text>
         <MatchStatusBadge status={m.status} />
       </Row>
-      <Text style={{ color: colors.text, fontSize: 22, fontWeight: '800', marginTop: 8, letterSpacing: -0.3 }}>{m.title}</Text>
+      <Text style={{ color: colors.text, fontSize: 18, fontWeight: '800', marginTop: 6, letterSpacing: -0.2 }}>{m.title}</Text>
       <View style={{ marginTop: 6 }}><ClubLine m={m} /></View>
       <Row style={{ flexWrap: 'wrap', marginTop: 4 }}>
         <Fact text={m.mode === 'club' ? 'Club multiplier' : 'Player vs player'} />
@@ -193,7 +193,7 @@ export default function PredictionScreen({ route, navigation }: any) {
       {m.live_video ? <MatchVideo video={m.live_video} /> : null}
 
       {/* Step 1: pick a side */}
-      {canPredict ? <SectionHeader title={editing ? '1. Change your pick' : '1. Pick who wins'} /> : <View style={{ height: spacing.lg }} />}
+      {canPredict ? <SectionHeader small title={editing ? '1. Change your pick' : '1. Pick who wins'} /> : <View style={{ height: spacing.lg }} />}
       <Row style={{ alignItems: 'stretch' }}>
         <SidePicker m={m} k="a" selected={side === 'a'} canPick={canPredict} onPick={() => setSide('a')} />
         <View style={{ width: 30, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: c.dim, fontWeight: '800', fontSize: 12 }}>VS</Text></View>
@@ -235,7 +235,7 @@ export default function PredictionScreen({ route, navigation }: any) {
       {/* Step 2: amount */}
       {canPredict ? (
         <>
-          <SectionHeader title="2. Choose your diamonds" />
+          <SectionHeader small title="2. Choose your diamonds" />
           <Card>
             <Row style={{ justifyContent: 'space-between', marginBottom: 10 }}>
               <Dim>Available in {m.club}</Dim>
@@ -245,7 +245,7 @@ export default function PredictionScreen({ route, navigation }: any) {
               <Text style={{ fontSize: 22 }}>💎</Text>
               <TextInput value={amount} onChangeText={(v) => setAmount(v.replace(/[^0-9.]/g, ''))} keyboardType="decimal-pad" placeholder="0" placeholderTextColor={colors.dim}
                 accessibilityLabel="Diamonds to predict" returnKeyType="done"
-                style={{ flex: 1, color: colors.text, fontSize: 26, fontWeight: '800', paddingVertical: 12, marginLeft: 10 }} />
+                style={{ flex: 1, color: colors.text, fontSize: 22, fontWeight: '800', paddingVertical: 10, marginLeft: 10 }} />
               {amount ? <Pressable onPress={() => setAmount('')} hitSlop={10} accessibilityLabel="Clear amount"><Text style={{ color: colors.dim, fontWeight: '700' }}>Clear</Text></Pressable> : null}
             </Row>
             <Row style={{ marginTop: 10, flexWrap: 'wrap', rowGap: 8 }}>
@@ -264,7 +264,7 @@ export default function PredictionScreen({ route, navigation }: any) {
       ) : null}
 
       {/* My predictions */}
-      {mine.length > 0 ? <SectionHeader title="My predictions" /> : null}
+      {mine.length > 0 ? <SectionHeader small title="My predictions" /> : null}
       {mine.map((b) => (
         <Card key={b.id} style={{ borderLeftWidth: 3, borderLeftColor: sideColor(b.side) }}>
           <Row style={{ justifyContent: 'space-between' }}>

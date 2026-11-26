@@ -104,6 +104,34 @@ export function AppHeader() {
   );
 }
 
+/** Display names are short like usernames (24 characters, letters, numbers, spaces and . _ - '); shows a live counter. */
+export const NAME_MAX = 24;
+export function NameField({ label = 'Display name', value, onChangeText, ...p }: TextInputProps & { label?: string; value: string; onChangeText: (v: string) => void }) {
+  const n = value.trim().length;
+  return (
+    <View style={{ marginBottom: spacing.md }}>
+      <Field label={label} value={value} onChangeText={onChangeText} maxLength={NAME_MAX} autoCapitalize="words" autoCorrect={false} {...p} style={[p.style as any, { marginBottom: 0 }]} />
+      <Text style={{ color: n > 0 && n < 2 ? colors.danger : colors.dim, fontSize: 11.5, marginTop: -6 }}>{n}/{NAME_MAX} · letters, numbers, spaces and . _ - '</Text>
+    </View>
+  );
+}
+
+/** Shown on every screen while a club has not decided on the player's join request yet. */
+export function PendingNotice() {
+  const nav = useNavigation<any>();
+  const q = useQuery({ queryKey: ['clubs'], queryFn: () => api.get<Club[]>('/clubs'), refetchInterval: POLL_MS });
+  const names = (q.data ?? []).filter((c) => c.membership === 'pending').map((c) => c.name);
+  if (!names.length) return null;
+  const list = names.length === 1 ? names[0] : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+  return (
+    <Pressable onPress={() => nav.navigate('Tabs', { screen: 'Clubs' })} accessibilityRole="button" accessibilityLabel={`Waiting for club approval. ${list} will verify you soon.`}
+      style={{ marginHorizontal: spacing.lg, marginTop: 8, paddingVertical: 7, paddingHorizontal: 10, borderRadius: radius.md, backgroundColor: colors.amber + '1A', borderWidth: 1, borderColor: colors.amber + '66' }}>
+      <Text style={{ color: colors.amber, fontWeight: '800', fontSize: 12.5 }} numberOfLines={1}>⏳ Waiting for club approval · <Text style={{ color: colors.text }}>{list}</Text></Text>
+      <Text style={{ color: colors.dim, fontSize: 11.5, marginTop: 1 }} numberOfLines={1}>Predictions unlock once the club approves you.</Text>
+    </Pressable>
+  );
+}
+
 /** Header for pushed (detail) screens: back arrow, title and an optional action on the right. Stays fixed while the page scrolls. */
 export function TopBar({ title, right, onBack }: { title?: string; right?: React.ReactNode; onBack?: () => void }) {
   const nav = useNavigation<any>();
@@ -137,6 +165,7 @@ export function Screen({ children, scroll = true, onRefresh, refreshing = false,
   return (
     <SafeAreaView style={s.screen} edges={edges ?? (detail ? ['top', 'bottom'] : ['top'])}>
       {hideBar ? null : detail ? <TopBar title={title} right={right} /> : <AppHeader />}
+      {hideBar ? null : <PendingNotice />}
       {footer ? (
         // Android draws edge to edge (behind the keyboard), so the window no longer shrinks for it: pad on both platforms.
         <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
@@ -157,10 +186,10 @@ export const T = ({ children, style, numberOfLines, selectable }: { children?: R
   <Text style={[s.text, style]} numberOfLines={numberOfLines} selectable={selectable}>{children}</Text>;
 
 /** Section title with an optional action on the right ("See all"). */
-export function SectionHeader({ title, action, onAction }: { title: string; action?: string; onAction?: () => void }) {
+export function SectionHeader({ title, action, onAction, small }: { title: string; action?: string; onAction?: () => void; small?: boolean }) {
   return (
-    <View style={s.sectionHead}>
-      <Text style={s.sectionTitle}>{title}</Text>
+    <View style={[s.sectionHead, small && { marginTop: spacing.lg, marginBottom: 10 }]}>
+      <Text style={[s.sectionTitle, small && { fontSize: 16 }]}>{title}</Text>
       {action && onAction ? <Pressable onPress={onAction} hitSlop={10}><Text style={s.sectionAction}>{action}</Text></Pressable> : null}
     </View>
   );

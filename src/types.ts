@@ -1,6 +1,10 @@
 export interface User {
   id: number; name: string; phone: string | null; email: string | null;
   phone_verified: boolean; kyc_status: string; can_predict: boolean; verified?: boolean; id_required?: boolean; is_owner: boolean;
+  /** when the display name can next be changed (null = now) */
+  name_change_at?: string | null;
+  /** clubs still deciding on this player's join request */
+  pending_clubs?: string[];
 }
 export interface Category { id: number; name: string; slug: string; icon: string | null }
 export interface LiveVideo { url: string; provider: 'youtube' | 'facebook' | 'twitch' | 'link'; embed_url: string | null }
