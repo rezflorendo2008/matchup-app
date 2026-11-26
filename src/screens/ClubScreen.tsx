@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Alert, Image, Pressable, Text, View } from 'react-native';
+import { Alert, Image, Pressable, Share, Text, View } from 'react-native';
+import { SvgXml } from 'react-native-svg';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, errMsg } from '../api';
 import { POLL_MS } from '../config';
@@ -189,6 +190,24 @@ export default function ClubScreen({ route, navigation }: any) {
                   <T style={{ fontWeight: '800' }}>Refer friends, earn diamonds 🎁</T>
                   <Dim style={{ marginTop: 2 }}>Earn {cl.referral.text}. Tap to get your link.</Dim>
                 </Card>
+              ) : null}
+              {approved && cl.join_qr_svg ? (
+                <>
+                  <SectionHeader title="Invite to this club" />
+                  <Card style={{ alignItems: 'center' }}>
+                    <T style={{ fontWeight: '800' }}>Club join QR code</T>
+                    {/* white square with a quiet zone so any phone camera can read it on the dark screen */}
+                    <View accessible accessibilityRole="image" accessibilityLabel={`QR code to join ${cl.name}`} style={{ marginTop: 10, backgroundColor: '#fff', borderRadius: 12, padding: 8 }}>
+                      <SvgXml xml={cl.join_qr_svg} width={200} height={200} />
+                    </View>
+                    <Dim style={{ marginTop: 10, textAlign: 'center' }}>Anyone can scan this to sign up and ask to join {cl.name}.{cl.referral ? ' To earn diamonds for invites, use your own QR on Refer & earn.' : ''}</Dim>
+                    {cl.join_link ? (
+                      <View style={{ alignSelf: 'stretch', marginTop: 12 }}>
+                        <Button title="Share club link" kind="ghost" small onPress={() => Share.share({ message: `Join ${cl.name} on PickArena: ${cl.join_link}` }).catch(() => {})} />
+                      </View>
+                    ) : null}
+                  </Card>
+                </>
               ) : null}
               {approved ? (
                 <>

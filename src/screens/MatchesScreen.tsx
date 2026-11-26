@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../api';
@@ -8,11 +8,13 @@ import { CardSkeleton, Chip, EmptyState, ErrorBox, H1, Screen } from '../ui';
 import { colors, radius } from '../theme';
 import type { Category, Match } from '../types';
 
-type Tab = 'live' | 'upcoming' | 'finished';
+/** Today = predictions open (or paused for a moment), Live = predictions closed while the match is played, Upcoming, Finished. */
+type Tab = 'today' | 'live' | 'upcoming' | 'finished';
 const TABS: { key: Tab; label: string; test: (m: Match) => boolean }[] = [
-  { key: 'live', label: 'Live', test: (m) => m.status === 'open' || m.status === 'paused' },
+  { key: 'today', label: 'Today', test: (m) => m.status === 'open' || m.status === 'paused' },
+  { key: 'live', label: 'Live', test: (m) => m.status === 'closed' },
   { key: 'upcoming', label: 'Upcoming', test: (m) => m.status === 'upcoming' },
-  { key: 'finished', label: 'Finished', test: (m) => !['open', 'paused', 'upcoming'].includes(m.status) },
+  { key: 'finished', label: 'Finished', test: (m) => m.status === 'settled' },
 ];
 
 /** Three big tabs with counts: the one decision a player makes on this screen. */
@@ -24,7 +26,7 @@ function Segmented({ value, counts, onChange }: { value: Tab; counts: Record<Tab
         return (
           <Pressable key={t.key} onPress={() => onChange(t.key)} accessibilityRole="tab" accessibilityState={{ selected: on }}
             style={{ flex: 1, paddingVertical: 10, borderRadius: radius.md, alignItems: 'center', backgroundColor: on ? colors.primary : 'transparent' }}>
-            <Text style={{ color: on ? '#fff' : colors.dim, fontWeight: '700', fontSize: 14 }}>{t.label}{counts[t.key] ? ` ${counts[t.key]}` : ''}</Text>
+            <Text style={{ color: on ? '#fff' : colors.dim, fontWeight: '700', fontSize: 13 }} numberOfLines={1}>{t.label}{counts[t.key] ? ` ${counts[t.key]}` : ''}</Text>
           </Pressable>
         );
       })}
@@ -35,21 +37,23 @@ function Segmented({ value, counts, onChange }: { value: Tab; counts: Record<Tab
 export default function MatchesScreen({ navigation }: any) {
   const [cat, setCat] = useState<number | null>(null);
   const [tab, setTab] = useState<Tab | null>(null);
-  const cats = useQuery({ queryKey: ['categories'], queryFn: () => api.get<Category[]>('/categories') });
+  const cats = useQuery({ queryKey: ['categories'], queryFn: () => api.get<Category[]>('/categories'), refetchInterval: POLL_MS });
   const q = useQuery({
     queryKey: ['matches', cat ?? 'all'], refetchInterval: POLL_MS,
     queryFn: () => api.get<Match[]>('/matches' + (cat ? `?category_id=${cat}` : '')),
   });
   const all = q.data ?? [];
-  const counts = { live: 0, upcoming: 0, finished: 0 } as Record<Tab, number>;
+  const counts = { today: 0, live: 0, upcoming: 0, finished: 0 } as Record<Tab, number>;
   TABS.forEach((t) => { counts[t.key] = all.filter(t.test).length; });
-  // Open on Live when something is live, otherwise the next most useful tab.
-  const active: Tab = tab ?? (counts.live ? 'live' : counts.upcoming ? 'upcoming' : counts.finished ? 'finished' : 'live');
+  // Open on Today when predictions are open, otherwise the next most useful tab.
+  const active: Tab = tab ?? (counts.today ? 'today' : counts.live ? 'live' : counts.upcoming ? 'upcoming' : counts.finished ? 'finished' : 'today');
+  // The server only lists categories with current matches; drop a picked one that no longer has any.
+  useEffect(() => { if (cat !== null && cats.data && !cats.data.some((c) => c.id === cat)) setCat(null); }, [cats.data, cat]);
   const shown = all.filter(TABS.find((t) => t.key === active)!.test);
   const catList = cats.data ?? [];
 
   return (
-    <Screen onRefresh={() => q.refetch()} refreshing={q.isRefetching}>
+    <Screen onRefresh={() => { q.refetch(); cats.refetch(); }} refreshing={q.isRefetching}>
       <H1>Matches</H1>
       <Segmented value={active} counts={counts} onChange={setTab} />
       {catList.length > 1 ? (
@@ -60,7 +64,8 @@ export default function MatchesScreen({ navigation }: any) {
       ) : null}
       {q.isLoading ? <CardSkeleton rows={3} kind="match" /> : q.error ? <ErrorBox error={q.error} onRetry={() => q.refetch()} />
         : all.length === 0 ? <EmptyState title="No matches yet" text="Join a club and wait for the owner to verify you, then matches show up here." actionLabel="Find a club" onAction={() => navigation.navigate('Clubs')} />
-        : shown.length === 0 ? <EmptyState title={active === 'live' ? 'Nothing live right now' : active === 'upcoming' ? 'Nothing coming up' : 'No finished matches'} text={active === 'live' && counts.upcoming ? 'Check the Upcoming tab for what is next.' : 'New matches from your clubs appear here.'} />
+        : shown.length === 0 ? <EmptyState title={({ today: 'No matches open today', live: 'Nothing live right now', upcoming: 'Nothing coming up', finished: 'No finished matches' } as Record<Tab, string>)[active]}
+            text={active === 'today' && counts.upcoming ? 'Check the Upcoming tab for what is next.' : 'New matches from your clubs appear here.'} />
         : <EventGroups matches={shown} onOpen={(m, side) => navigation.navigate('Prediction', { id: m.id, side })} />}
     </Screen>
   );

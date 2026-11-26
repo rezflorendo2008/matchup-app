@@ -138,7 +138,8 @@ export function Screen({ children, scroll = true, onRefresh, refreshing = false,
     <SafeAreaView style={s.screen} edges={edges ?? (detail ? ['top', 'bottom'] : ['top'])}>
       {hideBar ? null : detail ? <TopBar title={title} right={right} /> : <AppHeader />}
       {footer ? (
-        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        // Android draws edge to edge (behind the keyboard), so the window no longer shrinks for it: pad on both platforms.
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
           {body}
           <View style={s.footer}>{footer}</View>
         </KeyboardAvoidingView>
@@ -207,7 +208,8 @@ export function Chip({ label, active, onPress, disabled, style }: { label: strin
   return (
     <Pressable onPress={onPress} disabled={disabled} accessibilityRole="button" accessibilityState={{ selected: !!active, disabled: !!disabled }} hitSlop={4}
       style={[s.chip, active && { backgroundColor: colors.primary, borderColor: colors.primary }, disabled && { opacity: 0.4 }, style]}>
-      <Text style={{ color: active ? '#fff' : colors.dim, fontWeight: '600', fontSize: font.size.sm }}>{label}</Text>
+      {/* simple line breaking + one line: Android otherwise measures emoji labels too narrow and wraps the word out of sight */}
+      <Text numberOfLines={1} textBreakStrategy="simple" style={{ color: active ? '#fff' : colors.dim, fontWeight: '600', fontSize: font.size.sm }}>{label}</Text>
     </Pressable>
   );
 }
@@ -225,10 +227,10 @@ export function Badge({ text }: { text: string }) {
   return <View style={[s.badge, { borderColor: col + '66', backgroundColor: col + '1F' }]}><Text style={{ color: col, fontSize: 10.5, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.4 }}>{label}</Text></View>;
 }
 
-/** LIVE (pulsing), UPCOMING or COMPLETED, derived from the match status. */
+/** OPEN (predictions open today) and LIVE (predictions closed, match being played) pulse; then PAUSED, UPCOMING, COMPLETED. */
 export function MatchStatusBadge({ status, compact }: { status: string; compact?: boolean }) {
   const pulse = useRef(new Animated.Value(1)).current;
-  const live = status === 'open';
+  const live = status === 'open' || status === 'closed';
   useEffect(() => {
     if (!live) return;
     const loop = Animated.loop(Animated.sequence([
@@ -239,8 +241,8 @@ export function MatchStatusBadge({ status, compact }: { status: string; compact?
     return () => loop.stop();
   }, [live]);
   const map: Record<string, { label: string; col: string }> = {
-    open: { label: 'LIVE', col: colors.success }, paused: { label: 'PAUSED', col: colors.amber }, upcoming: { label: 'UPCOMING', col: colors.primarySoft },
-    closed: { label: 'CLOSED', col: colors.dim }, settled: { label: 'COMPLETED', col: colors.dim }, draft: { label: 'DRAFT', col: colors.dim },
+    open: { label: 'OPEN', col: colors.success }, paused: { label: 'PAUSED', col: colors.amber }, upcoming: { label: 'UPCOMING', col: colors.primarySoft },
+    closed: { label: 'LIVE', col: colors.danger }, settled: { label: 'COMPLETED', col: colors.dim }, draft: { label: 'DRAFT', col: colors.dim },
   };
   const m = map[status] ?? { label: status.toUpperCase(), col: colors.dim };
   return (
