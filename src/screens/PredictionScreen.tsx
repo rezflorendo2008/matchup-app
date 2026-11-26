@@ -125,7 +125,8 @@ export default function PredictionScreen({ route, navigation }: any) {
   const balance = Number(clubs.data?.find((x) => x.id === m?.club_id)?.balance ?? 0);
   const mine = (predictions.data?.data ?? []).filter((b) => b.match_id === id && ['confirmed', 'won', 'lost', 'refunded'].includes(b.status));
   const open = !!m?.predictions_open;
-  const canPredict = !!user?.can_predict && open;
+  // owners and match agents decide results, so they don't predict on their club's matches
+  const canPredict = !!user?.can_predict && open && !m?.can_manage;
   const amt = Number(amount);
   const max = m?.max_diamonds ? Number(m.max_diamonds) : null;
   const overMax = max != null && amt > max;
