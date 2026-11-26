@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import Constants from 'expo-constants';
 import { Alert, Linking, Text, View } from 'react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, errMsg } from '../api';
@@ -140,6 +141,13 @@ export default function ProfileScreen({ navigation }: any) {
       <PressScale onPress={() => navigation.navigate('DeleteAccount')} style={{ marginTop: 14, paddingVertical: 8, alignItems: 'center' }}>
         <Text style={{ color: colors.danger, fontWeight: '600' }}>Delete account</Text>
       </PressScale>
+      <Dim style={{ textAlign: 'center', marginTop: 12, fontSize: 12 }}>PickArena {appVersion()}</Dim>
     </Screen>
   );
+}
+
+/** Release shown to people: app.json "1.2.0" → "v1.2" (releases go v1.0, v1.1, v1.2 …). */
+export function appVersion(): string {
+  const [major = '1', minor = '0'] = String(Constants.expoConfig?.version ?? '1.0.0').split('.');
+  return `v${major}.${minor}`;
 }
