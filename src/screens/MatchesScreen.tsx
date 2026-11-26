@@ -11,8 +11,8 @@ import type { Category, Match } from '../types';
 /** Today = predictions open (or paused for a moment), Live = predictions closed while the match is played, Upcoming, Finished. */
 type Tab = 'today' | 'live' | 'upcoming' | 'finished';
 const TABS: { key: Tab; label: string; test: (m: Match) => boolean }[] = [
-  { key: 'today', label: 'Today', test: (m) => m.status === 'open' || m.status === 'paused' },
   { key: 'live', label: 'Live', test: (m) => m.status === 'closed' },
+  { key: 'today', label: 'Today', test: (m) => m.status === 'open' || m.status === 'paused' },
   { key: 'upcoming', label: 'Upcoming', test: (m) => m.status === 'upcoming' },
   { key: 'finished', label: 'Finished', test: (m) => m.status === 'settled' },
 ];
@@ -45,8 +45,8 @@ export default function MatchesScreen({ navigation }: any) {
   const all = q.data ?? [];
   const counts = { today: 0, live: 0, upcoming: 0, finished: 0 } as Record<Tab, number>;
   TABS.forEach((t) => { counts[t.key] = all.filter(t.test).length; });
-  // Open on Today when predictions are open, otherwise the next most useful tab.
-  const active: Tab = tab ?? (counts.today ? 'today' : counts.live ? 'live' : counts.upcoming ? 'upcoming' : counts.finished ? 'finished' : 'today');
+  // Live is the default tab; when nothing is live, open the next tab that has matches.
+  const active: Tab = tab ?? (counts.live ? 'live' : counts.today ? 'today' : counts.upcoming ? 'upcoming' : counts.finished ? 'finished' : 'live');
   // The server only lists categories with current matches; drop a picked one that no longer has any.
   useEffect(() => { if (cat !== null && cats.data && !cats.data.some((c) => c.id === cat)) setCat(null); }, [cats.data, cat]);
   const shown = all.filter(TABS.find((t) => t.key === active)!.test);
@@ -65,7 +65,7 @@ export default function MatchesScreen({ navigation }: any) {
       {q.isLoading ? <CardSkeleton rows={3} kind="match" /> : q.error ? <ErrorBox error={q.error} onRetry={() => q.refetch()} />
         : all.length === 0 ? <EmptyState title="No matches yet" text="Join a club and wait for the owner to verify you, then matches show up here." actionLabel="Find a club" onAction={() => navigation.navigate('Clubs')} />
         : shown.length === 0 ? <EmptyState title={({ today: 'No matches open today', live: 'Nothing live right now', upcoming: 'Nothing coming up', finished: 'No finished matches' } as Record<Tab, string>)[active]}
-            text={active === 'today' && counts.upcoming ? 'Check the Upcoming tab for what is next.' : 'New matches from your clubs appear here.'} />
+            text={active === 'live' && counts.today ? 'Check the Today tab for matches open for predictions.' : active === 'today' && counts.upcoming ? 'Check the Upcoming tab for what is next.' : 'New matches from your clubs appear here.'} />
         : <EventGroups matches={shown} onOpen={(m, side) => navigation.navigate('Prediction', { id: m.id, side })} />}
     </Screen>
   );

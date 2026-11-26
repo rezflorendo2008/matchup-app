@@ -5,7 +5,7 @@ import { Card, ClubAvatar, ClubVerificationBadge, Dim, Row, T, c, when } from '.
 import { ChevronDownIcon, ChevronRightIcon } from '../icons';
 import type { Match } from '../types';
 
-const ORDER: Record<string, number> = { open: 0, paused: 1, closed: 2, upcoming: 3, settled: 4 };   // today, live, upcoming, finished
+const ORDER: Record<string, number> = { closed: 0, open: 1, paused: 2, upcoming: 3, settled: 4 };   // live first, then today, upcoming, finished
 
 interface Group { key: string; title: string; category: string; club: string; logo: string | null; verified: boolean; matches: Match[]; rank: number; start: number }
 
