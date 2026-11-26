@@ -7,6 +7,7 @@ import { useAuth } from '../store';
 import { Badge, Button, Card, CardSkeleton, Chip, Dim, ErrorBox, MatchStatusBadge, PressScale, Row, Screen, SectionHeader, T, TeamAvatar, c, pts, whenShort } from '../ui';
 import { ClubLine } from '../components/MatchCards';
 import { MatchVideo } from '../components/MatchVideo';
+import { ClubControls } from '../components/ClubControls';
 import { CheckIcon, ChevronDownIcon, ChevronRightIcon } from '../icons';
 import { colors, radius, spacing } from '../theme';
 import type { Prediction, Club, Match } from '../types';
@@ -175,7 +176,7 @@ export default function PredictionScreen({ route, navigation }: any) {
   ) : undefined;
 
   return (
-    <Screen title={open ? 'Make a prediction' : 'Match'} footer={footer} onRefresh={refreshAll} refreshing={mq.isRefetching}>
+    <Screen title={open && !m.can_manage ? 'Make a prediction' : 'Match'} footer={footer} onRefresh={refreshAll} refreshing={mq.isRefetching}>
       {/* Match header */}
       <Row style={{ justifyContent: 'space-between' }}>
         <Text style={{ color: colors.primarySoft, fontWeight: '700', fontSize: 12.5, flex: 1, marginRight: 8 }} numberOfLines={1}>
@@ -191,6 +192,7 @@ export default function PredictionScreen({ route, navigation }: any) {
         {m.scheduled_at ? <Fact text={whenShort(m.scheduled_at)} /> : null}
       </Row>
       {m.live_video ? <MatchVideo video={m.live_video} /> : null}
+      {m.can_manage && ['open', 'paused', 'closed'].includes(m.status) ? <ClubControls m={m} onDone={refreshAll} /> : null}
 
       {/* Step 1: pick a side */}
       {canPredict ? <SectionHeader small title={editing ? '1. Change your pick' : '1. Pick who wins'} /> : <View style={{ height: spacing.lg }} />}
@@ -219,7 +221,7 @@ export default function PredictionScreen({ route, navigation }: any) {
       })() : null}
 
       {/* Why the player can't predict right now */}
-      {!user?.can_predict && open ? (
+      {!user?.can_predict && open && !m.can_manage ? (
         <Card style={{ marginTop: 14, borderColor: c.warn }}>
           <T style={{ fontWeight: '800' }}>Verify your account to predict</T>
           <Dim style={{ marginTop: 2 }}>Confirm your email and ID. Takes about 2 minutes.</Dim>
