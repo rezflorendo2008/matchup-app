@@ -5,6 +5,8 @@ export interface User {
   name_change_at?: string | null;
   /** clubs still deciding on this player's join request */
   pending_clubs?: string[];
+  /** account settings: verified mobile (required when the admin switches it on) and an email change waiting for its code */
+  mobile_verified?: boolean; mobile_required?: boolean; pending_email?: string | null;
 }
 export interface Category { id: number; name: string; slug: string; icon: string | null }
 export interface LiveVideo { url: string; provider: 'youtube' | 'facebook' | 'twitch' | 'link'; embed_url: string | null }

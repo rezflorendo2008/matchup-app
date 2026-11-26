@@ -10,6 +10,7 @@ import { Button, Card, Dim, NameField, PressScale, Row, Screen, SectionHeader, T
 import { BellIcon, ChevronRightIcon, DiamondIcon, HistoryIcon, ShieldIcon, TrophyIcon } from '../icons';
 import { colors, radius } from '../theme';
 import type { User } from '../types';
+import { AccountSheet, AccountSheets } from '../components/AccountSheets';
 
 function MenuRow({ icon, label, value, onPress, danger }: { icon: React.ReactNode; label: string; value?: string; onPress: () => void; danger?: boolean }) {
   return (
@@ -17,7 +18,7 @@ function MenuRow({ icon, label, value, onPress, danger }: { icon: React.ReactNod
       <Row>
         <View style={{ width: 32, alignItems: 'center', marginRight: 10 }}>{icon}</View>
         <T style={{ flex: 1, fontWeight: '600', color: danger ? colors.danger : colors.text }}>{label}</T>
-        {value ? <Dim style={{ marginRight: 6 }}>{value}</Dim> : null}
+        {value ? <Dim style={{ marginRight: 6, maxWidth: '58%' }} numberOfLines={1}>{value}</Dim> : null}
         <ChevronRightIcon />
       </Row>
     </PressScale>
@@ -58,9 +59,11 @@ export default function ProfileScreen({ navigation }: any) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(user.name);
   const [busy, setBusy] = useState(false);
+  const [sheet, setSheet] = useState<AccountSheet>(null);
   // Keep the badge fresh: an owner may have verified this account since the app last loaded it.
   const me = useQuery({ queryKey: ['me'], queryFn: () => api.get<User>('/me'), refetchInterval: POLL_MS });
-  useEffect(() => { if (me.data && (me.data.kyc_status !== user.kyc_status || me.data.can_predict !== user.can_predict || me.data.phone_verified !== user.phone_verified)) setUser(me.data); }, [me.data]);
+  useEffect(() => { if (me.data && (me.data.kyc_status !== user.kyc_status || me.data.can_predict !== user.can_predict || me.data.phone_verified !== user.phone_verified
+    || me.data.mobile_required !== user.mobile_required || me.data.mobile_verified !== user.mobile_verified || me.data.email !== user.email || me.data.pending_email !== user.pending_email)) setUser(me.data); }, [me.data]);
 
   const save = async () => {
     setBusy(true);
@@ -96,6 +99,7 @@ export default function ProfileScreen({ navigation }: any) {
         <Card style={{ borderColor: colors.warning }}>
           <T style={{ fontWeight: '800', marginBottom: 10 }}>Finish verifying to start predicting</T>
           <Step done={user.phone_verified} label="Confirm your email or phone" />
+          {user.mobile_required ? <Step done={!!user.mobile_verified} label="Verify your mobile number" hint={user.mobile_verified ? undefined : 'Account → Mobile number'} /> : null}
           {user.id_required !== false ? <Step done={idDone} label="Upload your ID" hint={idPending ? 'Waiting for a club owner to review it' : undefined} /> : <Step done={false} label="Get verified by your club owner" hint="No ID needed for your clubs" />}
           <Button title={user.phone_verified ? (user.id_required !== false ? 'Upload ID' : 'Review status') : 'Verify now'} onPress={() => navigation.navigate('Verify')} small style={{ marginTop: 6 }} />
         </Card>
@@ -123,6 +127,11 @@ export default function ProfileScreen({ navigation }: any) {
         <Group>
           <MenuRow icon={<Text style={{ fontSize: 18 }}>✏️</Text>} label="Display name" value={user.name}
             onPress={() => (nextChange ? Alert.alert('Display name', `You can change your display name once a week. Next change: ${nextChange.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}.`) : setEditing(true))} />
+          <MenuRow icon={<Text style={{ fontSize: 18 }}>✉️</Text>} label="Email" value={user.pending_email ? 'Waiting for code' : (user.email ?? 'Add email')} onPress={() => setSheet('email')} />
+          <MenuRow icon={<ShieldIcon size={20} color={colors.primarySoft} />} label="Password" value="Change" onPress={() => setSheet('password')} />
+          {user.mobile_required || user.phone ? (
+            <MenuRow icon={<Text style={{ fontSize: 18 }}>📱</Text>} label="Mobile number" value={user.phone ? `${user.phone}${user.mobile_verified ? ' ✓' : ' · verify'}` : 'Add and verify'} onPress={() => setSheet('mobile')} />
+          ) : null}
           {user.is_owner ? <MenuRow icon={<TrophyIcon size={20} />} label="Owner plan" onPress={() => navigation.navigate('Subscription')} /> : null}
         </Group>
       )}
@@ -142,6 +151,7 @@ export default function ProfileScreen({ navigation }: any) {
         <Text style={{ color: colors.danger, fontWeight: '600' }}>Delete account</Text>
       </PressScale>
       <Dim style={{ textAlign: 'center', marginTop: 12, fontSize: 12 }}>PickArena {appVersion()}</Dim>
+      <AccountSheets open={sheet} onClose={() => setSheet(null)} />
     </Screen>
   );
 }
