@@ -13,6 +13,8 @@ export interface Match {
   category_icon: string | null; side_a: string; side_b: string; status: 'upcoming' | 'open' | 'paused' | 'closed' | 'settled';
   predictions_open: boolean; scheduled_at: string | null; max_diamonds: number | null; multiplier_a: number | null; multiplier_b: number | null;
   result: string | null; mode: 'peer' | 'club'; open_a: number | null; open_b: number | null; my_diamonds?: number; has_score?: boolean; score_a?: number | null; score_b?: number | null; live_video?: LiveVideo | null;
+  /** club owner or match agent: may close predictions and set the winner */
+  can_manage?: boolean;
 }
 export interface Prediction {
   id: number; match_id: number; match: string; club_id: number; side: 'a' | 'b'; amount: number; matched_amount: number;
