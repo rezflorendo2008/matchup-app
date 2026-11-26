@@ -225,7 +225,7 @@ export default function PredictionScreen({ route, navigation }: any) {
         </Card>
       ) : !open && m.status !== 'settled' ? (
         <Card style={{ marginTop: 14 }}>
-          <T style={{ fontWeight: '700' }}>{m.status === 'paused' ? 'Predictions are paused' : m.status === 'upcoming' ? 'Predictions open soon' : 'Predictions are closed'}</T>
+          <T style={{ fontWeight: '700' }}>{m.status === 'paused' ? 'Predictions are paused' : m.status === 'upcoming' ? 'Predictions open soon' : m.status === 'closed' ? 'Live now · predictions are closed' : 'Predictions are closed'}</T>
           <Dim style={{ marginTop: 2 }}>{m.status === 'upcoming' ? (m.scheduled_at ? `This match starts ${whenShort(m.scheduled_at)}. ` : '') + 'Pull down to refresh.' : m.status === 'paused' ? 'The club paused this match for a moment. Pull down to refresh.' : 'Results show here once the club settles the match.'}</Dim>
         </Card>
       ) : null}

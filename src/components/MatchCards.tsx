@@ -51,7 +51,7 @@ export function TeamPlayerCard({ m, k, onOpen, compact, dense }: { m: Match; k: 
 /** Card for matches that are open for predictions. Kept compact (about 30% shorter than the first version) so more live matches fit on screen. */
 export function LiveMatchCard({ m, onOpen }: { m: Match; onOpen: OpenMatch }) {
   return (
-    <View style={{ backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: m.status === 'open' ? colors.success + '55' : colors.line, padding: 12, marginBottom: 10 }}>
+    <View style={{ backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: m.status === 'open' ? colors.success + '55' : m.status === 'closed' ? colors.danger + '55' : colors.line, padding: 12, marginBottom: 10 }}>
       <Row style={{ justifyContent: 'space-between' }}>
         <Text style={{ color: colors.primarySoft, fontWeight: '700', fontSize: 12, flex: 1, marginRight: 8 }} numberOfLines={1}>
           {m.category_icon ? `${m.category_icon} ` : ''}{m.category ?? 'Match'}{m.event ? ` · ${m.event}` : ''}

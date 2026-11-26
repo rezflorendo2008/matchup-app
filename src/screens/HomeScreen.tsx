@@ -77,7 +77,8 @@ export default function HomeScreen({ navigation }: any) {
   }
 
   const all = matches.data ?? [];
-  const live = all.filter((m) => m.status === 'open' || m.status === 'paused');
+  const today = all.filter((m) => m.status === 'open' || m.status === 'paused');   // predictions open (or paused for a moment)
+  const live = all.filter((m) => m.status === 'closed');                            // predictions closed, match being played
   const upcoming = all.filter((m) => m.status === 'upcoming');
   const recent = (results.data?.data ?? []).filter((b) => ['won', 'lost', 'refunded'].includes(b.status)).slice(0, 3);
   const cardW = width - 32;
@@ -89,7 +90,7 @@ export default function HomeScreen({ navigation }: any) {
     <Screen onRefresh={refresh} refreshing={home.isRefetching || matches.isRefetching}>
       <Row style={{ justifyContent: 'space-between', paddingTop: 4 }}>
         <Text style={{ color: colors.text, fontSize: 24, fontWeight: '800', letterSpacing: -0.4 }}>Hi {first}</Text>
-        {live.length > 0 ? <Badge text={`${live.length} live`} /> : null}
+        {today.length > 0 ? <Badge text={`${today.length} open`} /> : null}
       </Row>
 
       {!user?.can_predict ? (
@@ -99,10 +100,17 @@ export default function HomeScreen({ navigation }: any) {
         </Card>
       ) : null}
 
-      <SectionHeader title="Live now" action={live.length > 4 ? 'See all' : undefined} onAction={() => navigation.navigate('Matches')} />
+      <SectionHeader title="Today's matches" action={today.length > 4 ? 'See all' : undefined} onAction={() => navigation.navigate('Matches')} />
       {matches.isLoading ? <CardSkeleton rows={2} kind="match" />
-        : live.length === 0 ? <EmptyState title="No live matches" text="Open matches from your clubs show up here." />
-        : live.slice(0, 4).map((m) => <LiveMatchCard key={m.id} m={m} onOpen={openMatch} />)}
+        : today.length === 0 ? <EmptyState title="No matches open right now" text="Matches open for predictions show up here." />
+        : today.slice(0, 4).map((m) => <LiveMatchCard key={m.id} m={m} onOpen={openMatch} />)}
+
+      {live.length > 0 ? (
+        <>
+          <SectionHeader title="Live" action={live.length > 3 ? 'See all' : undefined} onAction={() => navigation.navigate('Matches')} />
+          {live.slice(0, 3).map((m) => <LiveMatchCard key={m.id} m={m} onOpen={openMatch} />)}
+        </>
+      ) : null}
 
       {upcoming.length > 0 ? (
         <>

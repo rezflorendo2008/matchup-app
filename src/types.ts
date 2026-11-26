@@ -21,7 +21,7 @@ export interface ClubProfile extends Club {
   tagline: string | null; can_predict: boolean;
   stats: { club_predictions: number; members: number; matches: number; my_predictions: number; my_active: number; my_won: number; my_lost: number };
   my_current: { id: number; match_id: number; match: string; side_name: string; amount: number; matched_amount: number; created_at: string }[];
-  current_matches: Match[]; past_matches: Match[];
+  current_matches: Match[]; past_matches: Match[]; join_link?: string | null; join_qr_svg?: string | null;
 }
 export interface Promo {
   id: number; type: 'promo' | 'ad'; title: string; subtitle: string | null; sponsor: string | null; image: string | null;

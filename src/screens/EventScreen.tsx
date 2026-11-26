@@ -10,7 +10,7 @@ import type { EventItem, Match } from '../types';
 export default function EventScreen({ route, navigation }: any) {
   const e: EventItem = route.params.event;
   const q = useQuery({ queryKey: ['matches', 'event', e.id], refetchInterval: POLL_MS, queryFn: () => api.get<Match[]>(`/matches?event_id=${e.id}`) });
-  const order: Record<string, number> = { open: 0, paused: 1, upcoming: 2, closed: 3, settled: 4 };
+  const order: Record<string, number> = { open: 0, paused: 1, closed: 2, upcoming: 3, settled: 4 };
   const list = [...(q.data ?? [])].sort((a, b) => (order[a.status] ?? 9) - (order[b.status] ?? 9));
   return (
     <Screen title="Event" onRefresh={() => q.refetch()} refreshing={q.isRefetching}>
