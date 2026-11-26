@@ -141,7 +141,6 @@ export default function LoginScreen() {
         {mode !== 'password' && !sent ? (
           <>
             <View style={{ marginTop: 18 }}>
-              <Dim style={{ textAlign: 'center', marginBottom: 8 }}>or continue with</Dim>
               <SocialButtons onError={(e) => setErr(e ?? null)} />
             </View>
             <View style={{ marginTop: 8 }}>

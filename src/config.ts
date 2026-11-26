@@ -1,4 +1,22 @@
-const env = (k: string): string => ((process.env as any)[k] ?? '').toString().trim();
+/**
+ * Expo only bakes EXPO_PUBLIC_* values into release builds when they are written out as `process.env.EXPO_PUBLIC_NAME`.
+ * A dynamic lookup (`process.env[name]`) works with the dev server but is empty in a release APK/IPA, so every value is listed here.
+ */
+const VARS: Record<string, string | undefined> = {
+  EXPO_PUBLIC_API_URL: process.env.EXPO_PUBLIC_API_URL,
+  EXPO_PUBLIC_ALLOW_HTTP: process.env.EXPO_PUBLIC_ALLOW_HTTP,
+  EXPO_PUBLIC_REVERB_KEY: process.env.EXPO_PUBLIC_REVERB_KEY,
+  EXPO_PUBLIC_REVERB_HOST: process.env.EXPO_PUBLIC_REVERB_HOST,
+  EXPO_PUBLIC_REVERB_PORT: process.env.EXPO_PUBLIC_REVERB_PORT,
+  EXPO_PUBLIC_REVERB_SCHEME: process.env.EXPO_PUBLIC_REVERB_SCHEME,
+  EXPO_PUBLIC_GOOGLE_CLIENT_ID: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID,
+  EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+  EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
+  EXPO_PUBLIC_FACEBOOK_APP_ID: process.env.EXPO_PUBLIC_FACEBOOK_APP_ID,
+  EXPO_PUBLIC_RC_IOS_KEY: process.env.EXPO_PUBLIC_RC_IOS_KEY,
+  EXPO_PUBLIC_RC_ANDROID_KEY: process.env.EXPO_PUBLIC_RC_ANDROID_KEY,
+};
+const env = (k: string): string => (VARS[k] ?? '').toString().trim();
 
 /** Where the Laravel API lives. Set EXPO_PUBLIC_API_URL in .env, then restart with `npx expo start -c`. */
 export const BASE = (env('EXPO_PUBLIC_API_URL') || 'http://pickarena.test/api/v1').replace(/\/+$/, '');

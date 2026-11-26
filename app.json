@@ -74,6 +74,12 @@
         }
       ]
     ],
-    "scheme": "pickarena"
+    "scheme": "pickarena",
+    "extra": {
+      "eas": {
+        "projectId": "e84c2546-10f9-468e-af72-70d5ca125e3e"
+      }
+    },
+    "owner": "rezflorendo"
   }
 }
