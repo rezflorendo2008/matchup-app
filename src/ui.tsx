@@ -59,7 +59,7 @@ export function DiamondWalletButton() {
   const q = useQuery({ queryKey: ['clubs'], queryFn: () => api.get<Club[]>('/clubs'), refetchInterval: POLL_MS });
   const total = (q.data ?? []).filter((x) => x.membership === 'approved').reduce((a, x) => a + Number(x.balance ?? 0), 0);
   return (
-    <PressScale onPress={() => nav.navigate('AddDiamonds')} accessibilityLabel="Add diamonds" hitSlop={8} style={s.pill}>
+    <PressScale onPress={() => nav.navigate('Diamonds')} accessibilityLabel="My diamonds" hitSlop={8} style={s.pill}>
       <DiamondGem size={18} />
       <Text style={s.pillText}>{pts(total)}</Text>
       <View style={s.plus}><PlusIcon size={14} color={colors.white} /></View>
