@@ -5,7 +5,7 @@ import { api, errMsg } from '../api';
 import { ORIGIN, POLL_MS } from '../config';
 import { unregisterPush } from '../push';
 import { useAuth } from '../store';
-import { Button, Card, Dim, Field, PressScale, Row, Screen, SectionHeader, T, TeamAvatar, VerifiedPill } from '../ui';
+import { Button, Card, Dim, NameField, PressScale, Row, Screen, SectionHeader, T, TeamAvatar, VerifiedPill } from '../ui';
 import { BellIcon, ChevronRightIcon, DiamondIcon, HistoryIcon, ShieldIcon, TrophyIcon } from '../icons';
 import { colors, radius } from '../theme';
 import type { User } from '../types';
@@ -72,6 +72,7 @@ export default function ProfileScreen({ navigation }: any) {
     await signOut(); qc.clear();
   };
   const idDone = user.kyc_status === 'verified';
+  const nextChange = user.name_change_at ? new Date(user.name_change_at) : null;   // display names change once a week
   const idPending = user.kyc_status === 'pending';
 
   return (
@@ -108,7 +109,8 @@ export default function ProfileScreen({ navigation }: any) {
       <SectionHeader title="Account" />
       {editing ? (
         <Card>
-          <Field label="Display name" value={name} onChangeText={setName} autoCapitalize="words" autoFocus />
+          <NameField value={name} onChangeText={setName} autoFocus />
+          <Dim style={{ marginBottom: 10, fontSize: 12 }}>You can change your display name once a week.</Dim>
           <Row style={{ gap: 10 }}>
             <View style={{ flex: 1 }}><Button title="Cancel" kind="ghost" small onPress={() => { setName(user.name); setEditing(false); }} /></View>
             <View style={{ flex: 1 }}><Button title="Save" small onPress={save} loading={busy} disabled={name.trim().length < 2 || name.trim() === user.name} /></View>
@@ -116,10 +118,12 @@ export default function ProfileScreen({ navigation }: any) {
         </Card>
       ) : (
         <Group>
-          <MenuRow icon={<Text style={{ fontSize: 18 }}>✏️</Text>} label="Display name" value={user.name} onPress={() => setEditing(true)} />
+          <MenuRow icon={<Text style={{ fontSize: 18 }}>✏️</Text>} label="Display name" value={user.name}
+            onPress={() => (nextChange ? Alert.alert('Display name', `You can change your display name once a week. Next change: ${nextChange.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}.`) : setEditing(true))} />
           {user.is_owner ? <MenuRow icon={<TrophyIcon size={20} />} label="Owner plan" onPress={() => navigation.navigate('Subscription')} /> : null}
         </Group>
       )}
+      {!editing && nextChange ? <Dim style={{ marginTop: 8 }}>Next display name change: {nextChange.toLocaleDateString([], { month: 'long', day: 'numeric' })}</Dim> : null}
       {user.is_owner ? <Dim style={{ marginTop: 8 }}>Manage matches, members and diamonds at {ORIGIN}/owner</Dim> : null}
 
       <SectionHeader title="About" />

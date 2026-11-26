@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Text, View } from 'react-native';
-import { Button, Card, Dim, Field, Logo, PressScale, Screen, T, c } from '../ui';
+import { Button, Card, Dim, Field, Logo, NameField, PressScale, Screen, T, c } from '../ui';
 import { SocialButtons } from '../components/SocialButtons';
 import { PhoneField } from '../components/PhoneField';
 import { Country, detectCountry, toE164 } from '../countries';
@@ -106,7 +106,7 @@ export default function LoginScreen() {
 
         {mode === 'password' ? (
           <>
-            {register ? <Field label="Display name" value={name} onChangeText={setName} autoCapitalize="words" maxLength={80} /> : null}
+            {register ? <NameField value={name} onChangeText={setName} /> : null}
             {register ? <Field label="Referral code (optional)" value={refCode} onChangeText={(v) => setRefCode(v.toUpperCase())} autoCapitalize="characters" autoCorrect={false} placeholder="From a friend" /> : null}
             <Field label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoComplete="email" autoCapitalize="none" />
             <Field label={register ? 'Password (at least 8 characters)' : 'Password'} value={password} onChangeText={setPassword} secureTextEntry autoComplete={register ? 'new-password' : 'current-password'} />
@@ -128,7 +128,7 @@ export default function LoginScreen() {
           <>
             {dev ? <Card style={{ borderColor: c.warn }}><T>Test mode: your code is <T style={{ fontWeight: '800' }}>{dev}</T></T></Card> : null}
             <Field label="6-digit code" value={code} onChangeText={setCode} keyboardType="number-pad" maxLength={6} autoComplete="one-time-code" autoFocus />
-            {needName ? <Field label="Display name" value={name} onChangeText={setName} autoCapitalize="words" placeholder="How friends will see you" maxLength={80} /> : null}
+            {needName ? <NameField value={name} onChangeText={setName} placeholder="How friends will see you" /> : null}
             {needName ? <Field label="Referral code (optional)" value={refCode} onChangeText={(v) => setRefCode(v.toUpperCase())} autoCapitalize="characters" autoCorrect={false} placeholder="From a friend" /> : null}
             <Button title="Verify & continue" onPress={verify} loading={busy} disabled={code.trim().length !== 6 || (needName && name.trim().length < 2)} />
             <TextLink label="Send a new code" onPress={sendCode} />
