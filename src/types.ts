@@ -33,6 +33,8 @@ export interface ClubProfile extends Club {
 export interface Promo {
   id: number; type: 'promo' | 'ad'; title: string; subtitle: string | null; sponsor: string | null; image: string | null;
   link_type: 'none' | 'url' | 'match' | 'club'; link_value: string | null;
+  /** show just the picture: title and text hidden (ads keep the Sponsored label) */
+  image_only?: boolean;
 }
 export interface EventItem {
   id: number; title: string; description: string | null; location: string | null; image: string | null;
