@@ -52,7 +52,7 @@ function Tabs() {
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Matches" component={MatchesScreen} />
       <Tab.Screen name="Clubs" component={ClubsScreen} />
-      <Tab.Screen name="Diamonds" component={DiamondsScreen} />
+      <Tab.Screen name="History" component={HistoryScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Account' }} />
     </Tab.Navigator>
   );
@@ -84,7 +84,7 @@ function Session() {
       if (!nav.isReady()) return;
       if (d.type === 'match' && d.match_id) nav.navigate('Prediction', { id: Number(d.match_id) });
       else if (d.type === 'referral') nav.navigate('Referral');
-      else if (d.type === 'diamonds' || d.type === 'wallet') nav.navigate('Tabs', { screen: 'Diamonds' });
+      else if (d.type === 'diamonds' || d.type === 'wallet') nav.navigate('Diamonds');
     });
     return () => sub.remove();
   }, []);
@@ -129,7 +129,7 @@ function Root() {
             <Stack.Screen name="Prediction" component={PredictionScreen} />
             <Stack.Screen name="Club" component={ClubScreen} />
             <Stack.Screen name="AddDiamonds" component={AddDiamondsScreen} />
-            <Stack.Screen name="History" component={HistoryScreen} />
+            <Stack.Screen name="Diamonds" component={DiamondsScreen} />
             <Stack.Screen name="Verify" component={VerifyScreen} />
             <Stack.Screen name="Notifications" component={NotificationsScreen} />
             <Stack.Screen name="Referral" component={ReferralScreen} />

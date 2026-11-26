@@ -37,8 +37,8 @@ export default function DiamondsScreen({ navigation }: any) {
   const rows = (tx.data?.data ?? []).filter((t) => !types || types.includes(t.type));
 
   return (
-    <Screen onRefresh={refresh} refreshing={clubsQ.isRefetching}>
-      <H1>My diamonds</H1>
+    // opened from the header diamond pill (no longer a bottom-menu tab): back arrow + title
+    <Screen title="My diamonds" onRefresh={refresh} refreshing={clubsQ.isRefetching}>
       {clubsQ.isLoading ? <CardSkeleton rows={2} /> : clubsQ.error ? <ErrorBox error={clubsQ.error} onRetry={refresh} />
         : !club ? (
           <EmptyState icon={<DiamondIcon size={26} color={colors.dim} />} title="No diamonds yet" text="Join a club and get verified to receive diamonds from the club owner."
@@ -88,7 +88,7 @@ export default function DiamondsScreen({ navigation }: any) {
                       <View style={{ flex: 1 }}>
                         <T style={{ fontWeight: '700' }}>{LABEL[t.type] ?? t.type.replace(/_/g, ' ')}</T>
                         {t.note ? <Dim numberOfLines={2}>{t.note}</Dim> : null}
-                        {t.type === 'lost' ? <Dim>Diamonds were used when you predicted</Dim> : null}
+                        {t.type === 'lost' ? <Dim><Text style={{ color: colors.danger, fontWeight: '800' }}>{pts(t.lost_amount ?? 0)} 💎 lost</Text>, used when you predicted</Dim> : null}
                         <Dim>{when(t.created_at)}</Dim>
                       </View>
                       <View style={{ alignItems: 'flex-end' }}>

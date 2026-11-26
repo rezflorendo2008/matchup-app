@@ -85,23 +85,27 @@ export function UpcomingMatchCard({ m, onOpen }: { m: Match; onOpen: OpenMatch }
         <Text style={{ color: colors.primarySoft, fontWeight: '700', fontSize: 12, flex: 1, marginRight: 8 }} numberOfLines={1}>{m.category_icon ? `${m.category_icon} ` : ''}{m.category ?? 'Match'}</Text>
         <MatchStatusBadge status={m.status} compact />
       </Row>
-      <Row style={{ marginTop: 10 }}>
-        <TeamAvatar name={m.side_a} size={32} color={colors.primary} />
-        <View style={{ flex: 1, marginHorizontal: 10 }}>
-          <Text style={{ color: colors.text, fontWeight: '700', fontSize: 15 }} numberOfLines={1}>{m.side_a} <Text style={{ color: colors.primarySoft, fontWeight: '800', fontSize: 12 }}>VS</Text> {m.side_b}</Text>
-          <Text style={{ color: colors.dim, fontSize: 12, marginTop: 2 }} numberOfLines={1}>{m.title}</Text>
+      {/* centred: [avatar] side A / VS / side B [avatar], then the title, start time, club and my prediction */}
+      <Row style={{ marginTop: 12, alignItems: 'center' }}>
+        <View style={{ flex: 1, alignItems: 'center' }}>
+          <TeamAvatar name={m.side_a} size={40} color={colors.primary} />
+          <Text style={{ color: colors.text, fontWeight: '700', fontSize: 14, marginTop: 6, textAlign: 'center' }} numberOfLines={1}>{m.side_a}</Text>
         </View>
-        <TeamAvatar name={m.side_b} size={32} color={colors.warning} />
+        <Text style={{ color: colors.primarySoft, fontWeight: '800', fontSize: 12, marginHorizontal: 8 }}>VS</Text>
+        <View style={{ flex: 1, alignItems: 'center' }}>
+          <TeamAvatar name={m.side_b} size={40} color={colors.warning} />
+          <Text style={{ color: colors.text, fontWeight: '700', fontSize: 14, marginTop: 6, textAlign: 'center' }} numberOfLines={1}>{m.side_b}</Text>
+        </View>
       </Row>
-      <Row style={{ marginTop: 10, justifyContent: 'space-between' }}>
-        <Row style={{ flex: 1 }}>
+      {m.title ? <Text style={{ color: colors.dim, fontSize: 12, marginTop: 8, textAlign: 'center' }} numberOfLines={1}>{m.title}</Text> : null}
+      <Row style={{ marginTop: 8, justifyContent: 'center', flexWrap: 'wrap', columnGap: 14, rowGap: 6 }}>
+        <Row>
           <CalendarIcon size={14} color={colors.dim} />
           <Text style={{ color: colors.dim, fontSize: 12, marginLeft: 5 }} numberOfLines={1}>{m.scheduled_at ? whenShort(m.scheduled_at) : 'Time to be announced'}</Text>
         </Row>
         <ClubLine m={m} size={16} />
-        <ChevronRightIcon size={16} color={colors.dim} />
       </Row>
-      <MyPredicted m={m} style={{ marginTop: 8 }} />
+      <MyPredicted m={m} style={{ marginTop: 8, textAlign: 'center' }} />
     </PressScale>
   );
 }

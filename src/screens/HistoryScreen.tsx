@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { ScrollView } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../api';
-import { Badge, Card, Chip, Dim, Empty, ErrorBox, Loading, Row, Screen, T, c, pts, when } from '../ui';
+import { Badge, Card, Chip, Dim, Empty, ErrorBox, Loading, Row, Screen, T, c, pts, when, H1 } from '../ui';
 import type { Prediction } from '../types';
 
 const FILTERS: [string, string][] = [['all', 'All'], ['confirmed', 'Active'], ['won', 'Won'], ['lost', 'Lost'], ['refunded', 'Returned']];
@@ -14,7 +14,9 @@ export default function HistoryScreen({ navigation }: any) {
     queryFn: () => api.get<{ data: Prediction[]; totals: { used: number; won: number } }>('/predictions' + (f === 'all' ? '' : `?status=${f}`)),
   });
   return (
-    <Screen title="Prediction history" onRefresh={() => q.refetch()} refreshing={q.isRefetching}>
+    // a bottom-menu tab: brand header, no back arrow
+    <Screen onRefresh={() => q.refetch()} refreshing={q.isRefetching}>
+      <H1>Prediction history</H1>
       {q.data ? (
         <Row style={{ gap: 10, marginBottom: 12 }}>
           <Card style={{ flex: 1, marginBottom: 0 }}><Dim>Diamonds used (settled)</Dim><T style={{ fontWeight: '800', fontSize: 18 }}>{pts(q.data.totals.used)}</T></Card>

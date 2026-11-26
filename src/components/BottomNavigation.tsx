@@ -6,12 +6,12 @@ import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { api } from '../api';
 import { POLL_MS } from '../config';
 import { useAuth } from '../store';
-import { DiamondIcon, HomeIcon, TargetIcon, UsersIcon } from '../icons';
+import { HistoryIcon, HomeIcon, TargetIcon, UsersIcon } from '../icons';
 import { colors, TAB_BAR_HEIGHT } from '../theme';
 import type { Match } from '../types';
 
 const ICONS: Record<string, (p: { size?: number; color?: string; filled?: boolean }) => React.ReactElement> = {
-  Home: HomeIcon, Matches: TargetIcon, Clubs: UsersIcon, Diamonds: DiamondIcon,
+  Home: HomeIcon, Matches: TargetIcon, Clubs: UsersIcon, History: HistoryIcon,
 };
 
 const initials = (n?: string) => (n || '?').trim().split(/\s+/).slice(0, 2).map((w) => w.charAt(0).toUpperCase()).join('') || '?';
