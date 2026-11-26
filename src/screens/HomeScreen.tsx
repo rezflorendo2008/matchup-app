@@ -90,7 +90,7 @@ export default function HomeScreen({ navigation }: any) {
     <Screen onRefresh={refresh} refreshing={home.isRefetching || matches.isRefetching}>
       <Row style={{ justifyContent: 'space-between', paddingTop: 4 }}>
         <Text style={{ color: colors.text, fontSize: 24, fontWeight: '800', letterSpacing: -0.4 }}>Hi {first}</Text>
-        {today.length > 0 ? <Badge text={`${today.length} open`} /> : null}
+        {live.length > 0 ? <Badge text={`${live.length} live`} /> : today.length > 0 ? <Badge text={`${today.length} open`} /> : null}
       </Row>
 
       {!user?.can_predict ? (
@@ -100,17 +100,18 @@ export default function HomeScreen({ navigation }: any) {
         </Card>
       ) : null}
 
+      {/* live matches always come first */}
+      {live.length > 0 ? (
+        <>
+          <SectionHeader title="Live now" action={live.length > 3 ? 'See all' : undefined} onAction={() => navigation.navigate('Matches')} />
+          {live.slice(0, 3).map((m) => <LiveMatchCard key={m.id} m={m} onOpen={openMatch} />)}
+        </>
+      ) : null}
+
       <SectionHeader title="Today's matches" action={today.length > 4 ? 'See all' : undefined} onAction={() => navigation.navigate('Matches')} />
       {matches.isLoading ? <CardSkeleton rows={2} kind="match" />
         : today.length === 0 ? <EmptyState title="No matches open right now" text="Matches open for predictions show up here." />
         : today.slice(0, 4).map((m) => <LiveMatchCard key={m.id} m={m} onOpen={openMatch} />)}
-
-      {live.length > 0 ? (
-        <>
-          <SectionHeader title="Live" action={live.length > 3 ? 'See all' : undefined} onAction={() => navigation.navigate('Matches')} />
-          {live.slice(0, 3).map((m) => <LiveMatchCard key={m.id} m={m} onOpen={openMatch} />)}
-        </>
-      ) : null}
 
       {upcoming.length > 0 ? (
         <>
