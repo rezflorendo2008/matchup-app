@@ -58,12 +58,11 @@ export function WelcomeCard({ user, club, multi, badge }: { user?: User | null; 
               </Text>
             </View>
           </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.line }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.line }}>
             <Pressable onPress={() => nav.navigate('Diamonds')} accessibilityRole="button" accessibilityLabel={`${pts(club.balance)} diamonds in ${club.name}`} hitSlop={6}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <DiamondIcon size={18} color={colors.primarySoft} />
-              <Text style={{ color: colors.text, fontWeight: '800', fontSize: 15 }}>{pts(club.balance)}</Text>
-              <Dim style={{ fontSize: 13 }}>diamonds here</Dim>
+              <Text style={{ color: colors.text, fontWeight: '800', fontSize: 17 }}>{pts(club.balance)}</Text>
             </Pressable>
             {multi ? (
               <Pressable onPress={() => nav.navigate('ChooseClub')} accessibilityRole="button" accessibilityLabel={`Switch club (now ${club.name})`}
