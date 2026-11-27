@@ -83,7 +83,7 @@ export default function HomeScreen({ navigation }: any) {
   const recent = (results.data?.data ?? []).filter((b) => ['won', 'lost', 'refunded'].includes(b.status)).slice(0, 3);
   const cardW = width - 32;
   const now = Date.now();
-  const upcomingEvents = (h?.events ?? []).filter((e) => new Date(e.starts_at).getTime() >= now - 6 * 3600e3).slice(0, 3);
+  const upcomingEvents = (h?.events ?? []).slice(0, 3);   // the server sends only events that are on and have announced, open or live matches
   const first = (user?.name ?? '').trim().split(/\s+/)[0] || 'there';
 
   return (

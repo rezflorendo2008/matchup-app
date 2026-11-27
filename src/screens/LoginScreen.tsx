@@ -35,6 +35,7 @@ export default function LoginScreen() {
   const [busy, setBusy] = useState(false);
   const [name, setName] = useState('');
   const [needName, setNeedName] = useState(false);
+  const [info, setInfo] = useState<string | null>(null);
   const [refCode, setRefCode] = useState('');
   const [invited, setInvited] = useState(false);
 
@@ -63,10 +64,13 @@ export default function LoginScreen() {
     setErr(null); setBusy(true);
     try { await fn(); } catch (e) {
       const msg = errMsg(e);
-      if (msg === NAME_MSG) { setNeedName(true); setErr('Welcome! Choose a display name to finish creating your account.'); } else setErr(msg);
+      if (msg === NAME_MSG) { setNeedName(true); setErr(null); } else setErr(msg);   // new account: one more step, not an error
     } finally { setBusy(false); }
   };
-  const back = (m: Mode) => { setMode(m); setErr(null); setSent(false); setCode(''); setDev(null); setNeedName(false); };
+  const back = (m: Mode) => { setMode(m); setErr(null); setInfo(null); setSent(false); setCode(''); setDev(null); setNeedName(false); };
+  // what the server checks for a new password: 8+ characters, a letter and a number
+  const pwRules: [boolean, string][] = [[password.length >= 8, '8+ characters'], [/[A-Za-z]/.test(password), 'a letter'], [/\d/.test(password), 'a number']];
+  const pwOk = pwRules.every((r) => r[0]);
 
   const sendCode = () => run(async () => {
     const path = mode === 'phone' ? '/auth/otp/send' : '/auth/email-otp/send';
@@ -88,8 +92,9 @@ export default function LoginScreen() {
   });
 
   const target = mode === 'phone' ? phone : email.trim();
-  const title = mode === 'password' ? (register ? 'Create your account' : 'Log in') : sent ? 'Check your ' + (mode === 'phone' ? 'messages' : 'email') : 'Sign in or create account';
+  const title = mode === 'password' ? (register ? 'Create your account' : 'Log in') : needName ? 'Choose your display name' : sent ? 'Check your ' + (mode === 'phone' ? 'messages' : 'email') : 'Sign in or create account';
   const sub = mode === 'password' ? 'Use your email and password.'
+    : needName ? 'Last step: this is the name other players will see. You can change it later.'
     : sent ? `We sent a 6-digit code to ${target}. It expires in 5 minutes.`
     : mode === 'phone' ? 'We will text you a 6-digit code.' : 'We will email you a 6-digit code. No password needed.';
 
@@ -110,9 +115,10 @@ export default function LoginScreen() {
             {register ? <Field label="Referral code (optional)" value={refCode} onChangeText={(v) => setRefCode(v.toUpperCase())} autoCapitalize="characters" autoCorrect={false} placeholder="From a friend" /> : null}
             <Field label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoComplete="email" autoCapitalize="none" />
             <Field label={register ? 'Password (at least 8 characters)' : 'Password'} value={password} onChangeText={setPassword} secureTextEntry autoComplete={register ? 'new-password' : 'current-password'} />
-            {register ? <Dim style={{ marginTop: -4, marginBottom: 12, color: password.length >= 8 ? c.good : c.dim }}>{password.length >= 8 ? '✓ Strong enough' : `At least 8 characters (${password.length}/8)`}</Dim> : null}
+            {register ? <Dim style={{ marginTop: -4, marginBottom: 12, color: pwOk ? c.good : c.dim }}>{pwOk ? '✓ Good password' : pwRules.map(([ok, label]) => (ok ? '✓ ' : '') + label).join(' · ')}</Dim> : null}
             <Button title={register ? 'Create account' : 'Log in'} onPress={passwordGo} loading={busy}
-              disabled={!email.includes('@') || password.length < (register ? 8 : 1) || (register && name.trim().length < 2)} />
+              disabled={!email.includes('@') || (register ? !pwOk : password.length < 1) || (register && name.trim().length < 2)} />
+            {!register ? <TextLink label="Forgot your password?" onPress={() => { back('email'); setInfo('No problem: sign in with a code we email you. Then set a new password in Account → Password.'); }} /> : null}
             <TextLink label={register ? 'I already have an account' : 'Create an account with a password'} onPress={() => { setRegister(!register); setErr(null); }} />
             <TextLink label="Use an email code instead" onPress={() => back('email')} />
           </>
@@ -127,8 +133,8 @@ export default function LoginScreen() {
         ) : (
           <>
             {dev ? <Card style={{ borderColor: c.warn }}><T>Test mode: your code is <T style={{ fontWeight: '800' }}>{dev}</T></T></Card> : null}
-            <Field label="6-digit code" value={code} onChangeText={setCode} keyboardType="number-pad" maxLength={6} autoComplete="one-time-code" autoFocus />
-            {needName ? <NameField value={name} onChangeText={setName} placeholder="How friends will see you" /> : null}
+            <Field label="6-digit code" value={code} onChangeText={setCode} keyboardType="number-pad" maxLength={6} autoComplete="one-time-code" autoFocus={!needName} />
+            {needName ? <NameField value={name} onChangeText={setName} placeholder="How friends will see you" autoFocus /> : null}
             {needName ? <Field label="Referral code (optional)" value={refCode} onChangeText={(v) => setRefCode(v.toUpperCase())} autoCapitalize="characters" autoCorrect={false} placeholder="From a friend" /> : null}
             <Button title="Verify & continue" onPress={verify} loading={busy} disabled={code.trim().length !== 6 || (needName && name.trim().length < 2)} />
             <TextLink label="Send a new code" onPress={sendCode} />
@@ -136,7 +142,8 @@ export default function LoginScreen() {
           </>
         )}
 
-        {err ? <Card style={{ borderColor: needName ? c.warn : c.bad, marginTop: 14 }}><T style={{ color: needName ? c.text : c.bad }}>{err}</T></Card> : null}
+        {info && mode === 'email' && !sent ? <Card style={{ borderColor: colors.primary, marginTop: 14 }}><T>{info}</T></Card> : null}
+        {err ? <Card style={{ borderColor: c.bad, marginTop: 14 }}><T style={{ color: c.bad }}>{err}</T></Card> : null}
 
         {mode !== 'password' && !sent ? (
           <>
