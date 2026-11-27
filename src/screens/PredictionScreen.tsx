@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, errMsg } from '../api';
 import { POLL_MS } from '../config';
 import { useAuth } from '../store';
-import { Badge, Button, Card, CardSkeleton, Chip, Dim, ErrorBox, MatchStatusBadge, PressScale, Row, Screen, SectionHeader, T, TeamAvatar, c, pts, whenShort } from '../ui';
+import { FieldError, Badge, Button, Card, CardSkeleton, Chip, Dim, ErrorBox, MatchStatusBadge, PressScale, Row, Screen, SectionHeader, T, TeamAvatar, c, pts, whenShort } from '../ui';
 import { ClubLine } from '../components/MatchCards';
 import { MatchVideo } from '../components/MatchVideo';
 import { ClubControls } from '../components/ClubControls';
@@ -259,11 +259,11 @@ export default function PredictionScreen({ route, navigation }: any) {
               {QUICK.map((q) => <Chip key={q} label={String(q)} active={amt === q} disabled={q > limit} onPress={() => setAmount(String(q))} />)}
               {limit >= 1 && Number.isFinite(limit) ? <Chip label={`Max ${pts(limit)}`} active={amt === limit} onPress={() => setAmount(String(limit))} /> : null}
             </Row>
-            {overMax ? <Dim style={{ color: colors.danger, marginTop: 10 }}>The most you can use on this match is {pts(max)} 💎.</Dim> : null}
+            {overMax ? <FieldError text={`The most you can use on this match is ${pts(max)} 💎.`} /> : null}
             {overBalance && !overMax ? (
-              <Row style={{ marginTop: 10, justifyContent: 'space-between' }}>
-                <Dim style={{ color: colors.danger, flex: 1, marginRight: 8 }}>You only have {pts(balance)} 💎 here.</Dim>
-                <Pressable onPress={() => navigation.navigate('AddDiamonds')} hitSlop={8}><Text style={{ color: colors.primarySoft, fontWeight: '800' }}>Get diamonds</Text></Pressable>
+              <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <View style={{ flex: 1, marginRight: 8 }}><FieldError text={`You only have ${pts(balance)} 💎 here.`} /></View>
+                <Pressable onPress={() => navigation.navigate('AddDiamonds')} hitSlop={8} style={{ marginTop: 6 }}><Text style={{ color: colors.primarySoft, fontWeight: '800' }}>Get diamonds</Text></Pressable>
               </Row>
             ) : null}
           </Card>

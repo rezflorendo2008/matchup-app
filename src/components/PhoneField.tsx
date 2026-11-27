@@ -2,10 +2,11 @@ import React, { useMemo, useState } from 'react';
 import { FlatList, Modal, Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { colors, font, radius, spacing } from '../theme';
 import { COUNTRIES, Country, flag, toE164 } from '../countries';
+import { FieldError } from '../ui';
 
 /** Country picker (flag + dial code) next to the number box. The parent keeps `country` and `national` and builds the full number with toE164(). */
-export function PhoneField({ label, country, onCountry, national, onNational, editable = true }: {
-  label?: string; country: Country; onCountry: (c: Country) => void; national: string; onNational: (v: string) => void; editable?: boolean;
+export function PhoneField({ label, country, onCountry, national, onNational, editable = true, error }: {
+  label?: string; country: Country; onCountry: (c: Country) => void; national: string; onNational: (v: string) => void; editable?: boolean; error?: string | null;
 }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');
@@ -16,7 +17,7 @@ export function PhoneField({ label, country, onCountry, national, onNational, ed
 
   return (
     <View style={{ marginBottom: spacing.md }}>
-      {label ? <Text style={s.label}>{label}</Text> : null}
+      {label ? <Text style={[s.label, error ? { color: colors.danger } : null]}>{label}</Text> : null}
       <View style={{ flexDirection: 'row', gap: 8 }}>
         <Pressable disabled={!editable} onPress={() => { setQ(''); setOpen(true); }} accessibilityLabel={`Country code, ${country.name} plus ${country.dial}`}
           style={[s.box, { flexDirection: 'row', alignItems: 'center', opacity: editable ? 1 : 0.6 }]}>
@@ -44,6 +45,7 @@ export function PhoneField({ label, country, onCountry, national, onNational, ed
             )} />
         </SafeAreaView>
       </Modal>
+      <FieldError text={error} />
     </View>
   );
 }
