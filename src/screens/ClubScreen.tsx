@@ -220,7 +220,7 @@ export default function ClubScreen({ route, navigation }: any) {
           {/* enter this club: only when you're in several clubs and this isn't the one you're in */}
           {approved && !isHere ? (
             <Button title="Enter this club" style={{ marginBottom: 4 }}
-              onPress={() => { setActiveClub(cl.id); showToast(`You're now in ${cl.name}`); navigation.navigate('Tabs', { screen: 'Home' }); }} />
+              onPress={() => { setActiveClub(cl.id); showToast(`You're in ${cl.name}`); navigation.navigate('Tabs', { screen: 'Home' }); }} />
           ) : null}
 
           {approved ? <TabBar value={active} onChange={setTab} tabs={tabs} /> : null}

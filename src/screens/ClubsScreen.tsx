@@ -96,7 +96,7 @@ export default function ClubsScreen({ route, navigation }: any) {
                   ) : null}
                   {canEnter ? (
                     <Pressable accessibilityRole="button" accessibilityLabel={`Enter ${cl.name}`} hitSlop={6}
-                      onPress={() => { setActiveClub(cl.id); showToast(`You're now in ${cl.name}`); }}
+                      onPress={() => { setActiveClub(cl.id); showToast(`You're in ${cl.name}`); navigation.navigate('Tabs', { screen: 'Home' }); }}
                       style={({ pressed }) => ({ backgroundColor: colors.primary, borderRadius: 999, paddingHorizontal: 16, minHeight: 36, justifyContent: 'center', opacity: pressed ? 0.85 : 1 })}>
                       <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>Enter</Text>
                     </Pressable>

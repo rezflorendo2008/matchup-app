@@ -18,7 +18,8 @@ export default function ChooseClubScreen({ navigation }: any) {
   const enter = (id: number, name: string) => {
     setActive(id);
     showToast(`You're in ${name}`);
-    if (navigation.canGoBack()) navigation.goBack(); else navigation.navigate('Tabs');
+    // entering a club always starts on its Home page
+    navigation.navigate('Tabs', { screen: 'Home' });
   };
   return (
     <Screen title={active ? 'Switch club' : 'Choose a club'} hideBack={needsPick}>
