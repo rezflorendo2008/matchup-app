@@ -92,50 +92,61 @@ function SidePicker({ m, k, selected, canPick, onPick }: { m: Match; k: Side; se
 
 /** How the diamonds are split between the two sides, with the full list of players on demand. */
 function PoolCard({ m, pool }: { m: Match; pool?: Participants }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);   // the players list starts open
   const a = Number(pool?.total_a ?? 0), b = Number(pool?.total_b ?? 0), sum = a + b;
-  const pa = sum ? Math.round((a / sum) * 100) : 50;
+  const pa = sum ? Math.round((a / sum) * 100) : 50, pb = 100 - pa;
+  const count = pool?.count ?? 0;
+  const SideTotal = ({ k, total, pct }: { k: Side; total: number; pct: number }) => (
+    <View style={{ flex: 1, minWidth: 0, padding: 12, borderRadius: 14, backgroundColor: colors.bg2, borderWidth: 1, borderColor: colors.line, alignItems: k === 'a' ? 'flex-start' : 'flex-end' }}>
+      <Row style={{ maxWidth: '100%' }}>
+        <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: sideColor(k), marginRight: 6 }} />
+        <Text style={{ color: colors.dim, fontWeight: '700', fontSize: 13.5, flexShrink: 1 }} numberOfLines={1}>{k === 'a' ? m.side_a : m.side_b}</Text>
+      </Row>
+      <Text style={{ color: colors.text, fontSize: 26, fontWeight: '900', letterSpacing: -0.5, marginTop: 4, fontVariant: ['tabular-nums'] }} numberOfLines={1} adjustsFontSizeToFit>
+        {pts(total)}<Text style={{ fontSize: 16 }}> 💎</Text>
+      </Text>
+      <Text style={{ color: sideColor(k), fontSize: 22, fontWeight: '900', marginTop: 2, fontVariant: ['tabular-nums'] }}>{sum ? `${pct}%` : '—'}</Text>
+    </View>
+  );
   return (
     <Card style={{ marginTop: 12 }}>
-      <Pressable onPress={() => setOpen(!open)} accessibilityRole="button" accessibilityState={{ expanded: open }} hitSlop={6}>
-        <Row style={{ justifyContent: 'space-between' }}>
-          <View style={{ flex: 1 }}>
-            <T style={{ fontWeight: '800' }}>Who predicted what</T>
-            <Dim style={{ fontSize: 12, marginTop: 2 }}>{pool ? `${pool.players} player${pool.players === 1 ? '' : 's'} · ${pool.count} prediction${pool.count === 1 ? '' : 's'}` : 'Loading…'}</Dim>
-          </View>
-          {open ? <ChevronDownIcon size={20} /> : <ChevronRightIcon size={20} />}
-        </Row>
-        <Row style={{ marginTop: 12, height: 8, borderRadius: 4, overflow: 'hidden', backgroundColor: colors.bg2 }}>
-          {sum ? (
-            <>
-              <View style={{ width: `${pa}%`, height: '100%', backgroundColor: c.a }} />
-              <View style={{ flex: 1, height: '100%', backgroundColor: c.b }} />
-            </>
-          ) : null}
-        </Row>
-        <Row style={{ justifyContent: 'space-between', marginTop: 6 }}>
-          <Text style={{ color: c.a, fontSize: 12, fontWeight: '800', flex: 1 }} numberOfLines={1}>{m.side_a} · {pts(a)} 💎{sum ? ` (${pa}%)` : ''}</Text>
-          <Text style={{ color: c.b, fontSize: 12, fontWeight: '800', flex: 1, textAlign: 'right' }} numberOfLines={1}>{sum ? `(${100 - pa}%) ` : ''}{pts(b)} 💎 · {m.side_b}</Text>
-        </Row>
-      </Pressable>
-      {open ? <Dim style={{ fontSize: 11.5, marginTop: 10 }}>In order of who predicted first. The first player on each side is matched first.</Dim> : null}
-      {open ? (
+      <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <View style={{ flex: 1, marginRight: 8 }}>
+          <Text accessibilityRole="header" style={{ color: colors.text, fontWeight: '800', fontSize: 18 }}>Players’ Predictions</Text>
+          <Dim style={{ fontSize: 12.5, marginTop: 2 }}>{pool ? `${pool.players} player${pool.players === 1 ? '' : 's'} · ${count} prediction${count === 1 ? '' : 's'} · ${pts(sum)} 💎 in total` : 'Loading…'}</Dim>
+        </View>
+        {count ? (
+          <Pressable onPress={() => setOpen(!open)} accessibilityRole="button" accessibilityState={{ expanded: open }} hitSlop={6}
+            style={{ flexDirection: 'row', alignItems: 'center', borderRadius: 999, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.bg2, paddingHorizontal: 12, paddingVertical: 7 }}>
+            <Text style={{ color: colors.text, fontWeight: '700', fontSize: 13, marginRight: 4 }}>{open ? 'Hide players' : 'Show players'}</Text>
+            {open ? <ChevronDownIcon size={16} /> : <ChevronRightIcon size={16} />}
+          </Pressable>
+        ) : null}
+      </Row>
+      <Row style={{ marginTop: 14, alignItems: 'stretch' }}>
+        <SideTotal k="a" total={a} pct={pa} />
+        <View style={{ width: 30, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: colors.dim, fontWeight: '800', fontSize: 12 }}>VS</Text></View>
+        <SideTotal k="b" total={b} pct={pb} />
+      </Row>
+      <View accessible accessibilityLabel={sum ? `${m.side_a} ${pa}%, ${m.side_b} ${pb}%` : 'No predictions yet'}
+        style={{ flexDirection: 'row', marginTop: 12, height: 12, borderRadius: 6, overflow: 'hidden', backgroundColor: colors.elevated }}>
+        {sum ? (<><View style={{ width: `${pa}%`, height: '100%', backgroundColor: c.a }} /><View style={{ flex: 1, height: '100%', backgroundColor: c.b }} /></>) : null}
+      </View>
+      {pool && !count ? <Dim style={{ marginTop: 10 }}>No predictions yet. Be the first!</Dim> : null}
+      {open && count ? <Dim style={{ fontSize: 11.5, marginTop: 12 }}>In order of who predicted first. The first player on each side is matched first.</Dim> : null}
+      {open && count ? (
         <Row style={{ alignItems: 'flex-start', marginTop: 10 }}>
           {(['a', 'b'] as const).map((k, i) => {
             const col = sideColor(k);
             const list = (pool?.items ?? []).filter((p) => p.side === k);
             return (
-              <View key={k} style={{ flex: 1, marginLeft: i ? 10 : 0 }}>
-                <ScrollView nestedScrollEnabled style={{ maxHeight: 260, borderTopWidth: 2, borderTopColor: col }}>
-                  {list.length === 0 ? <Dim style={{ fontSize: 12, paddingVertical: 8 }}>{pool ? 'No one yet' : 'Loading…'}</Dim> : list.map((p) => (
-                    <View key={p.id} style={{ paddingVertical: 5 }}>
-                      <Row style={{ justifyContent: 'space-between' }}>
-                        <Text style={{ color: p.mine ? c.text : c.dim, fontSize: 12, fontWeight: p.mine ? '800' : '500', flex: 1, marginRight: 4 }} numberOfLines={1}>{p.position ? `${p.position}. ` : ''}{p.name}{p.mine ? ' (you)' : ''}</Text>
-                        <Text style={{ color: col, fontSize: 12, fontWeight: '700' }}>{pts(Number(p.amount) + Number(p.unmatched_refund ?? 0))}</Text>
-                      </Row>
-                    </View>
-                  ))}
-                </ScrollView>
+              <View key={k} style={{ flex: 1, marginLeft: i ? 10 : 0, borderTopWidth: 2, borderTopColor: col }}>
+                {list.length === 0 ? <Dim style={{ fontSize: 12, paddingVertical: 8 }}>No one yet</Dim> : list.map((p) => (
+                  <Row key={p.id} style={{ justifyContent: 'space-between', paddingVertical: 6 }}>
+                    <Text style={{ color: p.mine ? c.text : c.dim, fontSize: 13, fontWeight: p.mine ? '800' : '500', flex: 1, marginRight: 4 }} numberOfLines={1}>{p.position ? `${p.position}. ` : ''}{p.name}{p.mine ? ' (you)' : ''}</Text>
+                    <Text style={{ color: col, fontSize: 13, fontWeight: '800' }}>{pts(Number(p.amount) + Number(p.unmatched_refund ?? 0))}</Text>
+                  </Row>
+                ))}
               </View>
             );
           })}
