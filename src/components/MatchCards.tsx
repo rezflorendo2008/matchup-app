@@ -21,57 +21,57 @@ export function MyPredicted({ m, style }: { m: Match; style?: any }) {
 }
 
 /** Club line: icon, name and verified tick. */
-export function ClubLine({ m, size = 18 }: { m: Match; size?: number }) {
+export function ClubLine({ m, size = 18, fontSize = 12.5 }: { m: Match; size?: number; fontSize?: number }) {
   return (
     <Row>
       <ClubAvatar name={m.club} logo={m.club_logo} size={size} />
-      <Text style={{ color: colors.dim, fontSize: 12.5, fontWeight: '600', flexShrink: 1 }} numberOfLines={1}>{m.club}</Text>
+      <Text style={{ color: colors.dim, fontSize, fontWeight: '600', flexShrink: 1 }} numberOfLines={1}>{m.club}</Text>
       {m.club_verified ? <ClubVerificationBadge size={14} /> : null}
     </Row>
   );
 }
 
 /** One side of a match: avatar, name and its multipliers / open diamonds. Tapping it opens the prediction slip on that side. */
-export function TeamPlayerCard({ m, k, onOpen, compact, dense }: { m: Match; k: 'a' | 'b'; onOpen: OpenMatch; compact?: boolean; dense?: boolean }) {
+export function TeamPlayerCard({ m, k, onOpen, compact, dense, mini }: { m: Match; k: 'a' | 'b'; onOpen: OpenMatch; compact?: boolean; dense?: boolean; mini?: boolean }) {
   const col = k === 'a' ? colors.primary : colors.warning;
   const won = m.status === 'settled' && m.result === k;
   const name = k === 'a' ? m.side_a : m.side_b;
   return (
     <PressScale onPress={() => onOpen(m, k)} scaleTo={0.96} wrapStyle={{ flex: 1 }} style={{
-      flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: dense ? 8 : compact ? 10 : 12, paddingHorizontal: dense ? 6 : 8, borderRadius: radius.md,
+      flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: mini ? 4 : dense ? 8 : compact ? 10 : 12, paddingHorizontal: mini || dense ? 6 : 8, borderRadius: mini ? 10 : radius.md,
       backgroundColor: won ? colors.success + '1A' : colors.bg2, borderWidth: won ? 1.5 : 1, borderColor: won ? colors.success : colors.line,
     }}>
-      <TeamAvatar name={name} color={col} size={dense ? 32 : compact ? 38 : 46} />
-      {m.has_score && (m.score_a != null || m.score_b != null) ? <Text style={{ color: colors.text, fontSize: dense ? 20 : compact ? 24 : 30, fontWeight: '800', marginTop: dense ? 3 : 6, letterSpacing: -0.5 }}>{(k === 'a' ? m.score_a : m.score_b) ?? 0}</Text> : null}
-      <Text style={{ color: colors.text, fontWeight: '700', fontSize: dense ? 13 : 14, marginTop: dense ? 5 : 8, textAlign: 'center' }} numberOfLines={dense ? 1 : 2}>{name}</Text>
-      <Text style={{ color: won ? colors.success : col, fontSize: dense ? 11.5 : 12, fontWeight: '700', marginTop: dense ? 1 : 2, textAlign: 'center' }}>{won ? '🏆 Won' : detail(m, k)}</Text>
+      <TeamAvatar name={name} color={col} size={mini ? 22 : dense ? 32 : compact ? 38 : 46} />
+      {m.has_score && (m.score_a != null || m.score_b != null) ? <Text style={{ color: colors.text, fontSize: mini ? 17 : dense ? 20 : compact ? 24 : 30, fontWeight: '800', marginTop: mini ? 2 : dense ? 3 : 6, letterSpacing: -0.5 }}>{(k === 'a' ? m.score_a : m.score_b) ?? 0}</Text> : null}
+      <Text style={{ color: colors.text, fontWeight: '700', fontSize: mini ? 11.5 : dense ? 13 : 14, marginTop: mini ? 2 : dense ? 5 : 8, textAlign: 'center' }} numberOfLines={mini || dense ? 1 : 2}>{name}</Text>
+      <Text style={{ color: won ? colors.success : col, fontSize: mini ? 11 : dense ? 11.5 : 12, fontWeight: '700', marginTop: 1, textAlign: 'center' }}>{won ? '🏆 Won' : detail(m, k)}</Text>
     </PressScale>
   );
 }
 
-/** Card for matches that are open for predictions. Kept compact (about 30% shorter than the first version) so more live matches fit on screen. */
+/** Card for live / today's matches. Kept small so more matches fit on screen. */
 export function LiveMatchCard({ m, onOpen }: { m: Match; onOpen: OpenMatch }) {
   return (
-    <View style={{ backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: m.status === 'open' ? colors.success + '55' : m.status === 'closed' ? colors.danger + '55' : colors.line, padding: 12, marginBottom: 10 }}>
+    <View style={{ backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: m.status === 'open' ? colors.success + '55' : m.status === 'closed' ? colors.danger + '55' : colors.line, padding: 8, marginBottom: 8 }}>
       <Row style={{ justifyContent: 'space-between' }}>
-        <Text style={{ color: colors.primarySoft, fontWeight: '700', fontSize: 12, flex: 1, marginRight: 8 }} numberOfLines={1}>
+        <Text style={{ color: colors.primarySoft, fontWeight: '700', fontSize: 11, flex: 1, marginRight: 8 }} numberOfLines={1}>
           {m.category_icon ? `${m.category_icon} ` : ''}{m.category ?? 'Match'}{m.event ? ` · ${m.event}` : ''}
         </Text>
         <MatchStatusBadge status={m.status} compact />
       </Row>
       <Pressable onPress={() => onOpen(m)} accessibilityRole="button" accessibilityLabel={`Open ${m.title}`}>
-        <Text style={{ color: colors.text, fontSize: 16, fontWeight: '800', marginTop: 6, letterSpacing: -0.2 }} numberOfLines={1}>{m.title}</Text>
+        <Text style={{ color: colors.text, fontSize: 13.5, fontWeight: '800', marginTop: 3, letterSpacing: -0.2 }} numberOfLines={1}>{m.title}</Text>
       </Pressable>
-      <Row style={{ marginTop: 3, justifyContent: 'space-between' }}><View style={{ flexShrink: 1 }}><ClubLine m={m} size={16} /></View><WatchTag m={m} /></Row>
-      <Row style={{ marginTop: 10, alignItems: 'stretch' }}>
-        <TeamPlayerCard m={m} k="a" onOpen={onOpen} dense />
-        <View style={{ width: 28, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: colors.dim, fontWeight: '800', fontSize: 11 }}>VS</Text></View>
-        <TeamPlayerCard m={m} k="b" onOpen={onOpen} dense />
+      <Row style={{ marginTop: 1, justifyContent: 'space-between' }}><View style={{ flexShrink: 1 }}><ClubLine m={m} size={14} fontSize={11.5} /></View><WatchTag m={m} /></Row>
+      <Row style={{ marginTop: 6, alignItems: 'stretch' }}>
+        <TeamPlayerCard m={m} k="a" onOpen={onOpen} mini />
+        <View style={{ width: 22, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: colors.dim, fontWeight: '800', fontSize: 10.5 }}>VS</Text></View>
+        <TeamPlayerCard m={m} k="b" onOpen={onOpen} mini />
       </Row>
-      <MyPredicted m={m} style={{ marginTop: 8, fontSize: 12, textAlign: 'center' }} />
+      <MyPredicted m={m} style={{ marginTop: 5, fontSize: 11, textAlign: 'center' }} />
       <PressScale onPress={() => onOpen(m)} accessibilityLabel={m.status === 'open' ? 'View match and predict' : 'View match'}
-        style={{ marginTop: 8, backgroundColor: colors.primary, borderRadius: radius.pill, minHeight: 36, alignItems: 'center', justifyContent: 'center' }}>
-        <Text style={{ color: colors.white, fontWeight: '800', fontSize: 13 }}>{m.status === 'open' ? 'View match & predict' : 'View match'}</Text>
+        style={{ marginTop: 5, backgroundColor: colors.primary, borderRadius: radius.pill, minHeight: 28, alignItems: 'center', justifyContent: 'center' }}>
+        <Text style={{ color: colors.white, fontWeight: '800', fontSize: 12 }}>{m.status === 'open' ? 'View match & predict' : 'View match'}</Text>
       </PressScale>
     </View>
   );

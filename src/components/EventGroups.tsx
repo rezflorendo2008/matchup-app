@@ -37,22 +37,22 @@ export function EventCard({ title, category, club, logo, verified, start, matche
   const [shut, setShut] = useState(false);
   return (
     <Card style={{ padding: 0, overflow: 'hidden', borderRadius: 18 }}>
-      <Pressable onPress={collapsible ? () => setShut(!shut) : undefined} style={{ padding: 14, backgroundColor: c.card2 }}>
+      <Pressable onPress={collapsible ? () => setShut(!shut) : undefined} style={{ padding: 11, backgroundColor: c.card2 }}>
         <Row style={{ justifyContent: 'space-between' }}>
           <View style={{ flex: 1 }}>
-            <T style={{ fontWeight: '800', fontSize: 18 }}>{title}</T>
-            <Row style={{ marginTop: 6 }}>
-              <Dim>by </Dim>
-              <ClubAvatar name={club} logo={logo} size={18} />
-              <T style={{ fontWeight: '600', flexShrink: 1 }} numberOfLines={1}>{club}</T>
+            <T style={{ fontWeight: '800', fontSize: 15 }}>{title}</T>
+            <Row style={{ marginTop: 4 }}>
+              <Dim style={{ fontSize: 12 }}>by </Dim>
+              <ClubAvatar name={club} logo={logo} size={15} />
+              <T style={{ fontWeight: '600', flexShrink: 1, fontSize: 13 }} numberOfLines={1}>{club}</T>
               {verified ? <ClubVerificationBadge size={14} /> : null}
             </Row>
-            <Dim style={{ marginTop: 4 }}>{category ? `${category} · ` : ''}{matches.length} match{matches.length === 1 ? '' : 'es'}{start ? ` · ${when(new Date(start).toISOString())}` : ''}</Dim>
+            <Dim style={{ marginTop: 3, fontSize: 12 }}>{category ? `${category} · ` : ''}{matches.length} match{matches.length === 1 ? '' : 'es'}{start ? ` · ${when(new Date(start).toISOString())}` : ''}</Dim>
           </View>
           {collapsible ? (shut ? <ChevronRightIcon size={20} /> : <ChevronDownIcon size={20} />) : null}
         </Row>
       </Pressable>
-      {shut ? null : <View style={{ paddingHorizontal: 14 }}>{matches.map((m) => <MatchRow key={m.id} m={m} onOpen={onOpen} />)}</View>}
+      {shut ? null : <View style={{ paddingHorizontal: 11 }}>{matches.map((m) => <MatchRow key={m.id} m={m} onOpen={onOpen} />)}</View>}
     </Card>
   );
 }
