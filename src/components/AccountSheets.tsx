@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Modal, Platform, ScrollView, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Platform, ScrollView, Text, View } from 'react-native';
 import { api, errMsg } from '../api';
 import { useAuth } from '../store';
 import { PhoneField } from './PhoneField';
@@ -7,6 +7,7 @@ import { Country, detectCountry, splitE164, toE164 } from '../countries';
 import { Button, Dim, Field } from '../ui';
 import { colors, radius } from '../theme';
 import type { User } from '../types';
+import { showAlert } from '../dialog';
 
 export type AccountSheet = 'email' | 'password' | 'mobile' | null;
 
@@ -28,7 +29,7 @@ function Sheet({ title, onClose, children }: { title: string; onClose: () => voi
   );
 }
 
-const fillDev = (r: { dev_code?: string }, set: (v: string) => void) => { if (r?.dev_code) { set(r.dev_code); Alert.alert('Dev mode', `Code: ${r.dev_code}`); } };
+const fillDev = (r: { dev_code?: string }, set: (v: string) => void) => { if (r?.dev_code) { set(r.dev_code); showAlert('Dev mode', `Code: ${r.dev_code}`); } };
 const digits = (v: string) => v.replace(/[^0-9]/g, '').slice(0, 6);
 
 /** Change email: code goes to the NEW address; the email changes only once that code is entered. */
@@ -39,14 +40,14 @@ function EmailSheet({ onClose }: { onClose: () => void }) {
   const [step, setStep] = useState<1 | 2>(user.pending_email ? 2 : 1);
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
-  const run = async (fn: () => Promise<void>) => { setBusy(true); try { await fn(); } catch (e) { Alert.alert('Email', errMsg(e)); } finally { setBusy(false); } };
+  const run = async (fn: () => Promise<void>) => { setBusy(true); try { await fn(); } catch (e) { showAlert('Email', errMsg(e)); } finally { setBusy(false); } };
   const send = () => run(async () => {
     const r = await api.post<{ email: string; dev_code?: string }>('/me/email/change', { email: email.trim() });
     setUser({ ...user, pending_email: r.email }); setEmail(r.email); fillDev(r, setCode); setStep(2);
   });
   const confirm = () => run(async () => {
     setUser(await api.post<User>('/me/email/change/confirm', { code })); onClose();
-    Alert.alert('Email changed', 'We let your old address know.');
+    showAlert('Email changed', 'We let your old address know.');
   });
   const restart = () => run(async () => { try { setUser(await api.del<User>('/me/email/change')); } catch {} setCode(''); setStep(1); });
   return (
@@ -79,15 +80,15 @@ function PasswordSheet({ onClose }: { onClose: () => void }) {
   const [busy, setBusy] = useState(false);
   const sendCode = async () => {
     setBusy(true);
-    try { const r = await api.post<{ to: string; dev_code?: string }>('/me/password/code'); setUseCode(true); fillDev(r, setCode); if (!r.dev_code) Alert.alert('Code sent', `We sent a code to ${r.to}.`); }
-    catch (e) { Alert.alert('Password', errMsg(e)); } finally { setBusy(false); }
+    try { const r = await api.post<{ to: string; dev_code?: string }>('/me/password/code'); setUseCode(true); fillDev(r, setCode); if (!r.dev_code) showAlert('Code sent', `We sent a code to ${r.to}.`); }
+    catch (e) { showAlert('Password', errMsg(e)); } finally { setBusy(false); }
   };
   const save = async () => {
     setBusy(true);
     try {
       await api.post('/me/password', { password: pw, password_confirmation: pw2, ...(useCode ? { code } : { current_password: current }) });
-      onClose(); Alert.alert('Password changed', 'Your other devices were signed out.');
-    } catch (e) { Alert.alert('Password', errMsg(e)); } finally { setBusy(false); }
+      onClose(); showAlert('Password changed', 'Your other devices were signed out.');
+    } catch (e) { showAlert('Password', errMsg(e)); } finally { setBusy(false); }
   };
   const ready = pw.length >= 8 && pw2.length >= 8 && (useCode ? code.length === 6 : current.length > 0);
   return (
@@ -123,12 +124,12 @@ function MobileSheet({ onClose }: { onClose: () => void }) {
   const send = async () => {
     setBusy(true);
     try { const r = await api.post<{ dev_code?: string }>('/me/phone/otp', { phone }); setSent(true); fillDev(r, setCode); }
-    catch (e) { Alert.alert('Mobile number', errMsg(e)); } finally { setBusy(false); }
+    catch (e) { showAlert('Mobile number', errMsg(e)); } finally { setBusy(false); }
   };
   const verify = async () => {
     setBusy(true);
-    try { setUser(await api.post<User>('/me/phone/verify', { phone, code })); onClose(); Alert.alert('Mobile number verified'); }
-    catch (e) { Alert.alert('Mobile number', errMsg(e)); } finally { setBusy(false); }
+    try { setUser(await api.post<User>('/me/phone/verify', { phone, code })); onClose(); showAlert('Mobile number verified'); }
+    catch (e) { showAlert('Mobile number', errMsg(e)); } finally { setBusy(false); }
   };
   return (
     <Sheet title={user.phone ? 'Change mobile number' : 'Verify mobile number'} onClose={onClose}>

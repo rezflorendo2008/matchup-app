@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, Linking, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { Linking, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, errMsg } from '../api';
 import { POLL_MS } from '../config';
@@ -11,6 +11,7 @@ import { PromoBanner, SponsoredBanner } from '../components/Banners';
 import { ArrowDownIcon, ArrowUpIcon, HistoryIcon } from '../icons';
 import { colors } from '../theme';
 import type { Prediction, Home, Match, Promo } from '../types';
+import { showAlert } from '../dialog';
 
 /** Shown instead of the whole home feed until the player belongs to a club. */
 function JoinFirstClub({ name, onBrowse }: { name: string; onBrowse: () => void }) {
@@ -19,8 +20,8 @@ function JoinFirstClub({ name, onBrowse }: { name: string; onBrowse: () => void 
   const [ref, setRef] = useState('');
   const join = useMutation({
     mutationFn: (v: string) => api.post('/clubs/join', { club_id: v, ref: ref.trim() || undefined }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['home'] }); qc.invalidateQueries({ queryKey: ['clubs'] }); Alert.alert('Request sent', 'The club owner will verify you soon.'); setCode(''); },
-    onError: (e) => Alert.alert('Could not join', errMsg(e)),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['home'] }); qc.invalidateQueries({ queryKey: ['clubs'] }); showAlert('Request sent', 'The club owner will verify you soon.'); setCode(''); },
+    onError: (e) => showAlert('Could not join', errMsg(e)),
   });
   const first = (name || '').trim().split(/\s+/)[0] || 'there';
   const steps = ['Ask your club owner for the club ID', 'Enter it below and send the request', 'Once approved, matches appear here'];

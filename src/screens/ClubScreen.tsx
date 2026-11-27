@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, Image, Pressable, Share, Text, View } from 'react-native';
+import { Image, Pressable, Share, Text, View } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, errMsg } from '../api';
@@ -9,6 +9,7 @@ import { Badge, Button, Card, CardSkeleton, Chip, ClubAvatar, ClubVerificationBa
 import { DiamondIcon, TrophyIcon } from '../icons';
 import { colors, radius } from '../theme';
 import type { ClubProfile } from '../types';
+import { showAlert } from '../dialog';
 
 type Tab = 'matches' | 'board' | 'about';
 type Period = 'week' | 'month' | 'all';
@@ -97,19 +98,19 @@ export default function ClubScreen({ route, navigation }: any) {
 
   const join = useMutation({
     mutationFn: (code: string) => api.post('/clubs/join', { club_id: code }),
-    onSuccess: () => { refresh(); Alert.alert('Request sent', 'The club owner must verify you before you can make predictions.'); },
-    onError: (e) => Alert.alert('Could not join', errMsg(e)),
+    onSuccess: () => { refresh(); showAlert('Request sent', 'The club owner must verify you before you can make predictions.'); },
+    onError: (e) => showAlert('Could not join', errMsg(e)),
   });
   const leave = useMutation({
     mutationFn: () => api.del(`/clubs/${id}/membership`),
-    onSuccess: () => { refresh(); Alert.alert('Done', 'You have left the club.'); navigation.goBack(); },
-    onError: (e) => Alert.alert('Could not leave', errMsg(e)),
+    onSuccess: () => { refresh(); showAlert('Done', 'You have left the club.'); navigation.goBack(); },
+    onError: (e) => showAlert('Could not leave', errMsg(e)),
   });
 
   const cl = q.data;
   const approved = cl?.membership === 'approved';
   const open = (m: { id: number }, side?: 'a' | 'b') => navigation.navigate('Prediction', { id: m.id, side });
-  const askLeave = () => cl && Alert.alert(cl.membership === 'pending' ? 'Cancel your request?' : `Leave ${cl.name}?`,
+  const askLeave = () => cl && showAlert(cl.membership === 'pending' ? 'Cancel your request?' : `Leave ${cl.name}?`,
     approved ? `Your ${pts(cl.balance)} diamonds stay in the club. You can't predict here while you're away.` : undefined,
     [{ text: 'Stay', style: 'cancel' }, { text: cl.membership === 'pending' ? 'Cancel request' : 'Leave club', style: 'destructive', onPress: () => leave.mutate() }]);
 

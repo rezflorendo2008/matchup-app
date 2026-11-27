@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Alert } from 'react-native';
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, errMsg } from '../api';
 import { buyProduct, purchasesAvailable, restorePurchases, setupPurchases } from '../purchases';
 import { useAuth } from '../store';
 import { Button, Card, Dim, ErrorBox, H2, Loading, Screen, T, c } from '../ui';
 import type { Plan, SubStatus } from '../types';
+import { showAlert } from '../dialog';
 
 export default function SubscriptionScreen({ navigation }: any) {
   const qc = useQueryClient();
@@ -19,15 +20,15 @@ export default function SubscriptionScreen({ navigation }: any) {
   const refresh = useMutation({
     mutationFn: () => api.post<SubStatus>('/me/subscription/refresh'),
     onSuccess: (d) => qc.setQueryData(['sub'], d),
-    onError: (e) => Alert.alert('Could not verify purchase', errMsg(e)),
+    onError: (e) => showAlert('Could not verify purchase', errMsg(e)),
   });
   const buy = useMutation({
     mutationFn: async (p: Plan) => { await buyProduct(p.product_id); return refresh.mutateAsync(); },
-    onError: (e: any) => { if (!e?.userCancelled) Alert.alert('Purchase failed', errMsg(e)); },
+    onError: (e: any) => { if (!e?.userCancelled) showAlert('Purchase failed', errMsg(e)); },
   });
   const restore = useMutation({
     mutationFn: async () => { await restorePurchases(); return refresh.mutateAsync(); },
-    onError: (e) => Alert.alert('Restore failed', errMsg(e)),
+    onError: (e) => showAlert('Restore failed', errMsg(e)),
   });
 
   const s = status.data;

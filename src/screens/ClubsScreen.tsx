@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, errMsg } from '../api';
 import { Badge, Button, Card, CardSkeleton, ClubAvatar, ClubVerificationBadge, Dim, ErrorBox, Field, H1, Row, Screen, SectionHeader, T, pts } from '../ui';
 import { ChevronRightIcon, DiamondIcon, SearchIcon } from '../icons';
 import { colors, radius } from '../theme';
 import type { Club } from '../types';
+import { showAlert } from '../dialog';
 
 export default function ClubsScreen({ route, navigation }: any) {
   const qc = useQueryClient();
@@ -19,12 +20,12 @@ export default function ClubsScreen({ route, navigation }: any) {
   const search = useMutation({
     mutationFn: (id: string) => api.get<Club>(`/clubs/search?club_id=${encodeURIComponent(id.trim())}`),
     onSuccess: setFound,
-    onError: (e) => { setFound(null); Alert.alert('Not found', errMsg(e)); },
+    onError: (e) => { setFound(null); showAlert('Not found', errMsg(e)); },
   });
   const join = useMutation({
     mutationFn: (body: { club_id?: string; slug?: string; ref?: string }) => api.post<Club>('/clubs/join', body),
-    onSuccess: (c) => { setFound(c); refresh(); Alert.alert('Request sent', c.membership === 'approved' ? 'You are already verified in this club.' : 'The club owner must verify you before you can make predictions.'); },
-    onError: (e) => Alert.alert('Could not join', errMsg(e)),
+    onSuccess: (c) => { setFound(c); refresh(); showAlert('Request sent', c.membership === 'approved' ? 'You are already verified in this club.' : 'The club owner must verify you before you can make predictions.'); },
+    onError: (e) => showAlert('Could not join', errMsg(e)),
   });
 
   // opened from an owner's sign-up link (pickarena://join/<slug>)

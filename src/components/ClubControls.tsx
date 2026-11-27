@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { api, errMsg } from '../api';
 import { Button, Card, Chip, Dim, Row, T, c, pts } from '../ui';
 import { CheckIcon } from '../icons';
 import { colors, radius } from '../theme';
 import type { Match } from '../types';
+import { showAlert } from '../dialog';
 
 type Result = 'a' | 'b' | 'draw' | 'cancel';
 type Preview = {
@@ -21,10 +22,10 @@ export function ClubControls({ m, onDone }: { m: Match; onDone: () => void }) {
   const [settling, setSettling] = useState(false);
   const close = useMutation({
     mutationFn: () => api.post<Match>(`/matches/${m.id}/close`),
-    onSuccess: () => { onDone(); Alert.alert('Predictions closed', 'Unmatched diamonds went back to the players. Set the winner when the match ends.'); },
-    onError: (e) => Alert.alert('Could not close', errMsg(e)),
+    onSuccess: () => { onDone(); showAlert('Predictions closed', 'Unmatched diamonds went back to the players. Set the winner when the match ends.'); },
+    onError: (e) => showAlert('Could not close', errMsg(e)),
   });
-  const askClose = () => Alert.alert('Close predictions?',
+  const askClose = () => showAlert('Close predictions?',
     `Players can no longer predict on "${m.title}". Diamonds that were never matched go back to the players. Set the winner when the match ends.`,
     [{ text: 'Keep open', style: 'cancel' }, { text: 'Close predictions', style: 'destructive', onPress: () => close.mutate() }]);
 
@@ -101,8 +102,8 @@ function SettleSheet({ m, onClose, onDone }: { m: Match; onClose: () => void; on
   });
   const settle = useMutation({
     mutationFn: () => api.post<Match>(`/matches/${m.id}/settle`, { result, confirm: true, ...(needScore ? { score_a: Number(fa), score_b: Number(fb) } : {}) }),
-    onSuccess: () => { onDone(); Alert.alert('Result saved', 'Winners are paid and every player is told.'); },
-    onError: (e) => Alert.alert('Not saved', errMsg(e)),
+    onSuccess: () => { onDone(); showAlert('Result saved', 'Winners are paid and every player is told.'); },
+    onError: (e) => showAlert('Not saved', errMsg(e)),
   });
   const pick = (k: Result) => { setResult(k); setTicked(false); };
   const p = pq.data;
