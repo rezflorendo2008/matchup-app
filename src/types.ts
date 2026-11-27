@@ -1,5 +1,6 @@
 export interface User {
   id: number; /** 7-digit Player ID players give their club owner */ player_id?: string | null; name: string; phone: string | null; email: string | null;
+  /** account created (a brand-new account gets "Welcome to PickArena") */ joined_at?: string | null;
   phone_verified: boolean; kyc_status: string; can_predict: boolean; verified?: boolean; id_required?: boolean; is_owner: boolean;
   /** when the display name can next be changed (null = now) */
   name_change_at?: string | null;

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import * as SecureStore from 'expo-secure-store';
 import type { User } from './types';
 import { BASE } from './config';
+import { useWelcome } from './welcome';
 
 const KEY = 'pickarena.auth';
 
@@ -24,6 +25,7 @@ export const useAuth = create<AuthState>((set, get) => ({
   },
   setAuth: async (token, user) => {
     set({ token, user });
+    useWelcome.getState().set('login');   // Home says "Welcome back"
     try { await SecureStore.setItemAsync(KEY, JSON.stringify({ token, user })); } catch {}
   },
   setUser: (user) => {

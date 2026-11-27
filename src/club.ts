@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from './api';
 import { POLL_MS } from './config';
 import type { Club } from './types';
+import { useWelcome } from './welcome';
 
 /**
  * Which club you're in. With one approved club nothing changes; with 2+ you choose one first,
@@ -13,10 +14,10 @@ import type { Club } from './types';
 const KEY = 'pickarena.club';
 
 type ActiveClub = { id: number | null; hydrated: boolean; set: (id: number) => void; hydrate: () => Promise<void> };
-export const useActiveClub = create<ActiveClub>((set) => ({
+export const useActiveClub = create<ActiveClub>((set, get) => ({
   id: null,
   hydrated: false,
-  set: (id) => { set({ id }); SecureStore.setItemAsync(KEY, String(id)).catch(() => {}); },
+  set: (id) => { if (get().id !== id) useWelcome.getState().set('switch'); set({ id }); SecureStore.setItemAsync(KEY, String(id)).catch(() => {}); },
   hydrate: async () => {
     try { const v = await SecureStore.getItemAsync(KEY); set({ id: v ? Number(v) || null : null, hydrated: true }); }
     catch { set({ hydrated: true }); }
