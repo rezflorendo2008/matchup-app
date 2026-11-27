@@ -9,8 +9,9 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from './api';
 import { POLL_MS } from './config';
 import { colors, font, radius, shadow, spacing } from './theme';
-import { AlertIcon, BellIcon, CheckBadgeIcon, ChevronLeftIcon, DiamondIcon, PlusIcon } from './icons';
+import { AlertIcon, BellIcon, CheckBadgeIcon, ChevronDownIcon, ChevronLeftIcon, DiamondIcon, PlusIcon } from './icons';
 import type { Club } from './types';
+import { useClubContext } from './club';
 
 /** Colour aliases kept for the existing screens; new code should import from ./theme. */
 export const c = {
@@ -44,11 +45,11 @@ export function PressScale({ children, onPress, style, wrapStyle, disabled, scal
 
 /* ---------- header & wallet ---------- */
 
-export function Logo({ size = 30 }: { size?: number }) {
+export function Logo({ size = 30, compact }: { size?: number; compact?: boolean }) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center' }} accessible accessibilityLabel="PickArena">
       <BrandMark size={size * 1.25} />
-      <Text style={[s.brand, { marginLeft: 6 }]}>Pick<Text style={{ color: colors.primarySoft }}>Arena</Text></Text>
+      {compact ? null : <Text style={[s.brand, { marginLeft: 6 }]}>Pick<Text style={{ color: colors.primarySoft }}>Arena</Text></Text>}
     </View>
   );
 }
@@ -56,13 +57,27 @@ export function Logo({ size = 30 }: { size?: number }) {
 /** Total diamonds with a compact "+" that opens Add Diamonds. */
 export function DiamondWalletButton() {
   const nav = useNavigation<any>();
-  const q = useQuery({ queryKey: ['clubs'], queryFn: () => api.get<Club[]>('/clubs'), refetchInterval: POLL_MS });
-  const total = (q.data ?? []).filter((x) => x.membership === 'approved').reduce((a, x) => a + Number(x.balance ?? 0), 0);
+  const { total } = useClubContext();   // the club you're in (or your only club)
   return (
     <PressScale onPress={() => nav.navigate('Diamonds')} accessibilityLabel="My diamonds" hitSlop={8} style={s.pill}>
       <DiamondGem size={18} />
       <Text style={s.pillText}>{pts(total)}</Text>
       <View style={s.plus}><PlusIcon size={14} color={colors.white} /></View>
+    </PressScale>
+  );
+}
+
+/** The club you're in, next to the diamonds (only with 2+ clubs); tap to switch. */
+export function ClubChip() {
+  const nav = useNavigation<any>();
+  const { multi, active } = useClubContext();
+  if (!multi) return null;
+  return (
+    <PressScale onPress={() => nav.navigate('ChooseClub')} accessibilityLabel={active ? `Club: ${active.name}. Switch club` : 'Choose a club'} hitSlop={6}
+      style={{ flexDirection: 'row', alignItems: 'center', height: 40, maxWidth: 140, paddingLeft: 6, paddingRight: 10, marginRight: 8, borderRadius: 20, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line }}>
+      {active ? <ClubAvatar name={active.name} logo={active.logo} size={22} /> : null}
+      <Text style={{ color: colors.text, fontWeight: '700', fontSize: 13, marginLeft: 6, flexShrink: 1 }} numberOfLines={1}>{active ? active.name : 'Choose club'}</Text>
+      <ChevronDownIcon size={14} />
     </PressScale>
   );
 }
@@ -79,10 +94,12 @@ export function VerifiedPill({ small }: { small?: boolean }) {
 }
 
 export function AppHeader() {
+  const { multi } = useClubContext();   // with the club chip there, show just the logo mark
   return (
     <View style={s.bar}>
-      <Logo />
-      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+      <Logo compact={multi} />
+      <View style={{ flexDirection: 'row', alignItems: 'center', flexShrink: 1, marginLeft: 8 }}>
+        <ClubChip />
         <DiamondWalletButton />
       </View>
     </View>
@@ -118,14 +135,16 @@ export function PendingNotice() {
 }
 
 /** Header for pushed (detail) screens: back arrow, title and an optional action on the right. Stays fixed while the page scrolls. */
-export function TopBar({ title, right, onBack }: { title?: string; right?: React.ReactNode; onBack?: () => void }) {
+export function TopBar({ title, right, onBack, hideBack }: { title?: string; right?: React.ReactNode; onBack?: () => void; hideBack?: boolean }) {
   const nav = useNavigation<any>();
   const back = onBack ?? (() => (nav.canGoBack() ? nav.goBack() : nav.navigate('Tabs')));
   return (
     <View style={s.topBar}>
-      <PressScale onPress={back} accessibilityLabel="Go back" hitSlop={8} style={s.backBtn}>
-        <ChevronLeftIcon size={22} color={colors.text} />
-      </PressScale>
+      {hideBack ? <View style={{ width: 40 }} /> : (
+        <PressScale onPress={back} accessibilityLabel="Go back" hitSlop={8} style={s.backBtn}>
+          <ChevronLeftIcon size={22} color={colors.text} />
+        </PressScale>
+      )}
       <Text style={s.topTitle} numberOfLines={1} accessibilityRole="header">{title ?? ''}</Text>
       <View style={{ minWidth: 40, alignItems: 'flex-end' }}>{right}</View>
     </View>
@@ -136,9 +155,9 @@ export function TopBar({ title, right, onBack }: { title?: string; right?: React
  * Page wrapper. Tab screens get the brand header; give a `title` to get the back-arrow TopBar instead (detail screens).
  * `footer` is pinned to the bottom above the keyboard, for the screen's main action.
  */
-export function Screen({ children, scroll = true, onRefresh, refreshing = false, edges, hideBar = false, title, right, footer }: {
+export function Screen({ children, scroll = true, onRefresh, refreshing = false, edges, hideBar = false, title, right, footer, hideBack }: {
   children: React.ReactNode; scroll?: boolean; onRefresh?: () => void; refreshing?: boolean; edges?: ('top' | 'bottom')[]; hideBar?: boolean;
-  title?: string; right?: React.ReactNode; footer?: React.ReactNode;
+  title?: string; right?: React.ReactNode; footer?: React.ReactNode; hideBack?: boolean;
 }) {
   const detail = title !== undefined;
   const body = scroll ? (
@@ -149,7 +168,7 @@ export function Screen({ children, scroll = true, onRefresh, refreshing = false,
   ) : children;
   return (
     <SafeAreaView style={s.screen} edges={edges ?? (detail ? ['top', 'bottom'] : ['top'])}>
-      {hideBar ? null : detail ? <TopBar title={title} right={right} /> : <AppHeader />}
+      {hideBar ? null : detail ? <TopBar title={title} right={right} hideBack={hideBack} /> : <AppHeader />}
       {hideBar ? null : <PendingNotice />}
       {footer ? (
         // Android draws edge to edge (behind the keyboard), so the window no longer shrinks for it: pad on both platforms.

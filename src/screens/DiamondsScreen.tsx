@@ -8,6 +8,7 @@ import { Badge, Button, Card, CardSkeleton, Chip, Dim, EmptyState, ErrorBox, H1,
 import { ArrowDownIcon, ArrowUpIcon, DiamondIcon, HistoryIcon, PlusIcon, TrophyIcon } from '../icons';
 import { colors, radius } from '../theme';
 import type { Club, Tx } from '../types';
+import { useClubContext } from '../club';
 
 const LABEL: Record<string, string> = {
   grant: 'Diamonds added', deposit: 'Diamonds added', referral: 'Referral bonus 🎁', claim: 'Diamonds claimed',
@@ -26,7 +27,8 @@ export default function DiamondsScreen({ navigation }: any) {
   const approved = (clubsQ.data ?? []).filter((x) => x.membership === 'approved');
   const [clubId, setClubId] = useState<number | null>(null);
   const [filter, setFilter] = useState('all');
-  const club = approved.find((x) => x.id === clubId) ?? approved[0];
+  const { active } = useClubContext();
+  const club = approved.find((x) => x.id === clubId) ?? approved.find((x) => x.id === active?.id) ?? approved[0];
   const total = approved.reduce((a, x) => a + Number(x.balance ?? 0), 0);
 
   const tx = useQuery({ enabled: !!club, queryKey: ['tx', club?.id], refetchInterval: POLL_MS, queryFn: () => api.get<{ data: Tx[] }>(`/clubs/${club!.id}/wallet/transactions`) });

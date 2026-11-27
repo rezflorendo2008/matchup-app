@@ -9,6 +9,7 @@ import { useAuth } from '../store';
 import { BellIcon, HistoryIcon, HomeIcon, TargetIcon, UsersIcon } from '../icons';
 import { colors } from '../theme';
 import type { Match } from '../types';
+import { useClubContext } from '../club';
 
 const ICONS: Record<string, (p: { size?: number; color?: string; filled?: boolean }) => React.ReactElement> = {
   Home: HomeIcon, Matches: TargetIcon, Clubs: UsersIcon, History: HistoryIcon, Alerts: BellIcon,
@@ -53,7 +54,8 @@ export function BottomNavigation({ state, descriptors, navigation }: BottomTabBa
   // same queries the screens use, so the badges cost no extra requests
   const matches = useQuery({ queryKey: ['matches', 'all'], queryFn: () => api.get<Match[]>('/matches'), refetchInterval: POLL_MS });
   const unread = useQuery({ queryKey: ['notifications', 'unread'], queryFn: () => api.get<{ unread: number }>('/notifications/unread'), refetchInterval: POLL_MS });
-  const live = (matches.data ?? []).filter((m) => m.status === 'closed').length;
+  const { inClub } = useClubContext();   // with 2+ clubs, only the one you're in
+  const live = inClub(matches.data ?? []).filter((m) => m.status === 'closed').length;
   return (
     <View style={[s.wrap, { paddingBottom: Math.max(insets.bottom, 10) }]}>
       <View style={s.bar}>

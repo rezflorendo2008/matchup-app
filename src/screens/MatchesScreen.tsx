@@ -7,6 +7,7 @@ import { EventGroups } from '../components/EventGroups';
 import { CardSkeleton, Chip, EmptyState, ErrorBox, H1, Screen } from '../ui';
 import { colors, radius } from '../theme';
 import type { Category, Match } from '../types';
+import { useClubContext } from '../club';
 
 /** Today = predictions open (or paused for a moment), Live = predictions closed while the match is played, Upcoming, Finished. */
 type Tab = 'today' | 'live' | 'upcoming' | 'finished';
@@ -42,7 +43,8 @@ export default function MatchesScreen({ navigation }: any) {
     queryKey: ['matches', cat ?? 'all'], refetchInterval: POLL_MS,
     queryFn: () => api.get<Match[]>('/matches' + (cat ? `?category_id=${cat}` : '')),
   });
-  const all = q.data ?? [];
+  const clubCtx = useClubContext();
+  const all = clubCtx.inClub(q.data ?? []);   // with 2+ clubs, only the one you're in
   const counts = { today: 0, live: 0, upcoming: 0, finished: 0 } as Record<Tab, number>;
   TABS.forEach((t) => { counts[t.key] = all.filter(t.test).length; });
   // Live is the default tab; when nothing is live, open the next tab that has matches.

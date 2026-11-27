@@ -45,7 +45,7 @@ export interface Promo {
   image_only?: boolean;
 }
 export interface EventItem {
-  id: number; title: string; description: string | null; location: string | null; image: string | null;
+  id: number; club_id?: number | null; title: string; description: string | null; location: string | null; image: string | null;
   starts_at: string; ends_at: string | null; category: string | null; category_icon: string | null;
 }
 export interface FeaturedClub {

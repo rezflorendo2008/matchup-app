@@ -39,6 +39,8 @@ import DeleteAccountScreen from './src/screens/DeleteAccountScreen';
 import NotificationsScreen from './src/screens/NotificationsScreen';
 import ReferralScreen from './src/screens/ReferralScreen';
 import { DialogHost } from './src/dialog';
+import ChooseClubScreen from './src/screens/ChooseClubScreen';
+import { useClubContext } from './src/club';
 
 const qc = new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 5000 } } });
 const nav = createNavigationContainerRef<any>();
@@ -93,6 +95,22 @@ function Session() {
   return null;
 }
 
+/** In 2+ clubs and none chosen yet: open Choose a club (it can't be skipped until one is picked). */
+function ClubGate() {
+  const { needsPick } = useClubContext();
+  useEffect(() => {
+    if (!needsPick) return;
+    let t: ReturnType<typeof setTimeout>;
+    const go = () => {
+      if (!nav.isReady()) { t = setTimeout(go, 150); return; }   // navigation still starting up
+      if (nav.getCurrentRoute()?.name !== 'ChooseClub') nav.navigate('ChooseClub');
+    };
+    go();
+    return () => clearTimeout(t);
+  }, [needsPick]);
+  return null;
+}
+
 function Root() {
   const { hydrated, token, hydrate } = useAuth();
   useEffect(() => { hydrate(); }, []);
@@ -126,6 +144,7 @@ function Root() {
       {token ? (
         <>
           <Session />
+          <ClubGate />
           <Stack.Navigator screenOptions={{ headerShown: false }}>
             <Stack.Screen name="Tabs" component={Tabs} />
             <Stack.Screen name="Prediction" component={PredictionScreen} />
@@ -134,6 +153,7 @@ function Root() {
             <Stack.Screen name="Diamonds" component={DiamondsScreen} />
             <Stack.Screen name="Verify" component={VerifyScreen} />
             <Stack.Screen name="Notifications" component={NotificationsScreen} />
+            <Stack.Screen name="ChooseClub" component={ChooseClubScreen} options={{ gestureEnabled: false }} />
             <Stack.Screen name="Referral" component={ReferralScreen} />
             <Stack.Screen name="Event" component={EventScreen} />
             <Stack.Screen name="Subscription" component={SubscriptionScreen} />
