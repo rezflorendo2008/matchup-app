@@ -68,20 +68,6 @@ export function DiamondWalletButton() {
 }
 
 /** Bell with an unread counter; opens the notification centre. */
-export function NotificationBell() {
-  const nav = useNavigation<any>();
-  const q = useQuery({ queryKey: ['notifications', 'unread'], queryFn: () => api.get<{ unread: number }>('/notifications/unread'), refetchInterval: POLL_MS });
-  const n = q.data?.unread ?? 0;
-  return (
-    <PressScale onPress={() => nav.navigate('Notifications')} accessibilityLabel={n ? `Notifications, ${n} unread` : 'Notifications'} hitSlop={8}
-      style={{ width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line, marginRight: 8 }}>
-      <BellIcon size={20} color={colors.text} />
-      {n > 0 ? <View style={{ position: 'absolute', top: -2, right: -2, minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 4, backgroundColor: colors.danger, alignItems: 'center', justifyContent: 'center' }}>
-        <Text style={{ color: '#fff', fontSize: 10, fontWeight: '800' }}>{n > 9 ? '9+' : n}</Text></View> : null}
-    </PressScale>
-  );
-}
-
 /** "Verified" pill shown next to a player's name once email/phone and ID are both verified. */
 export function VerifiedPill({ small }: { small?: boolean }) {
   return (
@@ -97,7 +83,6 @@ export function AppHeader() {
     <View style={s.bar}>
       <Logo />
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <NotificationBell />
         <DiamondWalletButton />
       </View>
     </View>

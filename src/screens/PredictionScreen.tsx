@@ -7,13 +7,14 @@ import { useAuth } from '../store';
 import { Badge, Button, Card, CardSkeleton, Chip, Dim, ErrorBox, MatchStatusBadge, PressScale, Row, Screen, SectionHeader, T, TeamAvatar, c, pts, whenShort } from '../ui';
 import { ClubLine } from '../components/MatchCards';
 import { MatchVideo } from '../components/MatchVideo';
+import { ClubControls } from '../components/ClubControls';
 import { CheckIcon, ChevronDownIcon, ChevronRightIcon } from '../icons';
 import { colors, radius, spacing } from '../theme';
 import type { Prediction, Club, Match } from '../types';
 
 type Side = 'a' | 'b';
 type Participants = { total: number; total_a: number; total_b: number; count: number; players: number;
-  items: { id: number; name: string; side: Side; amount: number; mine: boolean; status: string }[] };
+  items: { id: number; name: string; side: Side; amount: number; mine: boolean; status: string; unmatched_refund?: number | null; matched_with?: { name: string; amount: number }[]; position?: number | null; confirmed_at?: string | null }[] };
 
 const sideColor = (k: Side) => (k === 'a' ? c.a : c.b);
 const QUICK = [10, 50, 100, 500];
@@ -82,6 +83,7 @@ function PoolCard({ m, pool }: { m: Match; pool?: Participants }) {
           <Text style={{ color: c.b, fontSize: 12, fontWeight: '800', flex: 1, textAlign: 'right' }} numberOfLines={1}>{sum ? `(${100 - pa}%) ` : ''}{pts(b)} 💎 · {m.side_b}</Text>
         </Row>
       </Pressable>
+      {open ? <Dim style={{ fontSize: 11.5, marginTop: 10 }}>In order of who predicted first. The first player on each side is matched first.</Dim> : null}
       {open ? (
         <Row style={{ alignItems: 'flex-start', marginTop: 10 }}>
           {(['a', 'b'] as const).map((k, i) => {
@@ -89,12 +91,17 @@ function PoolCard({ m, pool }: { m: Match; pool?: Participants }) {
             const list = (pool?.items ?? []).filter((p) => p.side === k);
             return (
               <View key={k} style={{ flex: 1, marginLeft: i ? 10 : 0 }}>
-                <ScrollView nestedScrollEnabled style={{ maxHeight: 160, borderTopWidth: 2, borderTopColor: col }}>
+                <ScrollView nestedScrollEnabled style={{ maxHeight: 260, borderTopWidth: 2, borderTopColor: col }}>
                   {list.length === 0 ? <Dim style={{ fontSize: 12, paddingVertical: 8 }}>{pool ? 'No one yet' : 'Loading…'}</Dim> : list.map((p) => (
-                    <Row key={p.id} style={{ justifyContent: 'space-between', paddingVertical: 5 }}>
-                      <Text style={{ color: p.mine ? c.text : c.dim, fontSize: 12, fontWeight: p.mine ? '800' : '500', flex: 1, marginRight: 4 }} numberOfLines={1}>{p.name}{p.mine ? ' (you)' : ''}</Text>
-                      <Text style={{ color: col, fontSize: 12, fontWeight: '700' }}>{pts(p.amount)}</Text>
-                    </Row>
+                    <View key={p.id} style={{ paddingVertical: 5 }}>
+                      <Row style={{ justifyContent: 'space-between' }}>
+                        <Text style={{ color: p.mine ? c.text : c.dim, fontSize: 12, fontWeight: p.mine ? '800' : '500', flex: 1, marginRight: 4 }} numberOfLines={1}>{p.position ? `${p.position}. ` : ''}{p.name}{p.mine ? ' (you)' : ''}</Text>
+                        <Text style={{ color: col, fontSize: 12, fontWeight: '700' }}>{pts(Number(p.amount) + Number(p.unmatched_refund ?? 0))}</Text>
+                      </Row>
+                      {p.confirmed_at ? <Text style={{ color: c.dim, fontSize: 10.5, marginTop: 1 }}>{new Date(p.confirmed_at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit' })}</Text> : null}
+                      {p.matched_with?.length ? <Text style={{ color: c.dim, fontSize: 10.5, marginTop: 1 }}>vs {p.matched_with.map((x) => `${x.name} ${pts(x.amount)}`).join(', ')}</Text> : null}
+                      {Number(p.unmatched_refund) > 0 ? <Text style={{ color: c.dim, fontSize: 10.5, marginTop: 1 }}>↩️ {pts(p.unmatched_refund)} returned</Text> : null}
+                    </View>
                   ))}
                 </ScrollView>
               </View>
@@ -124,7 +131,8 @@ export default function PredictionScreen({ route, navigation }: any) {
   const balance = Number(clubs.data?.find((x) => x.id === m?.club_id)?.balance ?? 0);
   const mine = (predictions.data?.data ?? []).filter((b) => b.match_id === id && ['confirmed', 'won', 'lost', 'refunded'].includes(b.status));
   const open = !!m?.predictions_open;
-  const canPredict = !!user?.can_predict && open;
+  // owners and match agents decide results, so they don't predict on their club's matches
+  const canPredict = !!user?.can_predict && open && !m?.can_manage;
   const amt = Number(amount);
   const max = m?.max_diamonds ? Number(m.max_diamonds) : null;
   const overMax = max != null && amt > max;
@@ -175,7 +183,7 @@ export default function PredictionScreen({ route, navigation }: any) {
   ) : undefined;
 
   return (
-    <Screen title={open ? 'Make a prediction' : 'Match'} footer={footer} onRefresh={refreshAll} refreshing={mq.isRefetching}>
+    <Screen title={open && !m.can_manage ? 'Make a prediction' : 'Match'} footer={footer} onRefresh={refreshAll} refreshing={mq.isRefetching}>
       {/* Match header */}
       <Row style={{ justifyContent: 'space-between' }}>
         <Text style={{ color: colors.primarySoft, fontWeight: '700', fontSize: 12.5, flex: 1, marginRight: 8 }} numberOfLines={1}>
@@ -191,6 +199,7 @@ export default function PredictionScreen({ route, navigation }: any) {
         {m.scheduled_at ? <Fact text={whenShort(m.scheduled_at)} /> : null}
       </Row>
       {m.live_video ? <MatchVideo video={m.live_video} /> : null}
+      {m.can_manage && ['open', 'paused', 'closed'].includes(m.status) ? <ClubControls m={m} onDone={refreshAll} /> : null}
 
       {/* Step 1: pick a side */}
       {canPredict ? <SectionHeader small title={editing ? '1. Change your pick' : '1. Pick who wins'} /> : <View style={{ height: spacing.lg }} />}
@@ -219,7 +228,7 @@ export default function PredictionScreen({ route, navigation }: any) {
       })() : null}
 
       {/* Why the player can't predict right now */}
-      {!user?.can_predict && open ? (
+      {!user?.can_predict && open && !m.can_manage ? (
         <Card style={{ marginTop: 14, borderColor: c.warn }}>
           <T style={{ fontWeight: '800' }}>Verify your account to predict</T>
           <Dim style={{ marginTop: 2 }}>Confirm your email and ID. Takes about 2 minutes.</Dim>
@@ -268,13 +277,21 @@ export default function PredictionScreen({ route, navigation }: any) {
       {mine.map((b) => (
         <Card key={b.id} style={{ borderLeftWidth: 3, borderLeftColor: sideColor(b.side) }}>
           <Row style={{ justifyContent: 'space-between' }}>
-            <T style={{ fontWeight: '800', flex: 1, marginRight: 8 }} numberOfLines={1}>{name(b.side)} · {pts(b.amount)} 💎</T>
+            <T style={{ fontWeight: '800', flex: 1, marginRight: 8 }} numberOfLines={1}>{name(b.side)} · {pts(b.original_amount ?? b.amount)} 💎</T>
             <Badge text={b.status} />
           </Row>
           <Dim style={{ marginTop: 2 }}>
             {b.status === 'won' ? `Won +${pts(b.reward)} 💎` : b.status === 'lost' ? `${pts(b.matched_amount)} 💎 used` : b.status === 'refunded' ? 'Diamonds returned'
-              : Number(b.matched_amount) >= Number(b.amount) ? 'Fully matched' : `Matched ${pts(b.matched_amount)} of ${pts(b.amount)} · waiting for players`}
+              : Number(b.matched_amount) >= Number(b.original_amount ?? b.amount) ? 'Fully matched'
+              : Number(b.unmatched_refund) > 0 ? `Matched ${pts(b.matched_amount)} of ${pts(b.original_amount ?? b.amount)}` : `Matched ${pts(b.matched_amount)} of ${pts(b.amount)} · waiting for players`}
           </Dim>
+          {b.matched_with?.length ? (
+            <Text style={{ color: c.text, fontSize: 13, marginTop: 6, lineHeight: 19 }}>
+              <Text style={{ color: c.dim }}>Matched with </Text>
+              {b.matched_with.map((x, i) => <Text key={i}>{i ? ', ' : ''}<Text style={{ fontWeight: '800' }}>{x.name}</Text> {pts(x.amount)} 💎</Text>)}
+            </Text>
+          ) : null}
+          {Number(b.unmatched_refund) > 0 ? <Dim style={{ marginTop: 4 }}>↩️ {pts(b.unmatched_refund)} 💎 not matched · returned to you</Dim> : null}
           {b.can_edit && open ? (
             <Row style={{ marginTop: 10, gap: 8 }}>
               <Button style={{ flex: 1 }} small kind="ghost" title={editing?.id === b.id ? 'Editing…' : 'Change'} disabled={editing?.id === b.id}
