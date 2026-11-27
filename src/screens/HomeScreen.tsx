@@ -13,6 +13,7 @@ import { colors } from '../theme';
 import type { Prediction, Home, Match, Promo } from '../types';
 import { showAlert } from '../dialog';
 import { useClubContext } from '../club';
+import { WelcomeCard, welcomeTitle } from '../components/WelcomeCard';
 
 /** Shown instead of the whole home feed until the player belongs to a club. */
 function JoinFirstClub({ name, onBrowse }: { name: string; onBrowse: () => void }) {
@@ -25,11 +26,10 @@ function JoinFirstClub({ name, onBrowse }: { name: string; onBrowse: () => void 
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['home'] }); qc.invalidateQueries({ queryKey: ['clubs'] }); showAlert('Request sent', 'The club owner will verify you soon.'); setCode(''); },
     onError: (e) => setCodeErr(errMsg(e)),
   });
-  const first = (name || '').trim().split(/\s+/)[0] || 'there';
   const steps = ['Ask your club owner for the club ID', 'Enter it below and send the request', 'Once approved, matches appear here'];
   return (
     <View style={{ paddingTop: 8 }}>
-      <Text style={{ color: colors.text, fontSize: 26, fontWeight: '800', letterSpacing: -0.4 }}>Hi {first}</Text>
+      <Text style={{ color: colors.text, fontSize: 26, fontWeight: '800', letterSpacing: -0.4 }}>{welcomeTitle(useAuth.getState().user, null)}</Text>
       <Text style={{ color: colors.dim, fontSize: 15, marginTop: 4 }}>Join a club to start predicting.</Text>
       <Card style={{ marginTop: 18 }}>
         {steps.map((s, i) => (
@@ -92,10 +92,8 @@ export default function HomeScreen({ navigation }: any) {
 
   return (
     <Screen onRefresh={refresh} refreshing={home.isRefetching || matches.isRefetching}>
-      <Row style={{ justifyContent: 'space-between', paddingTop: 4 }}>
-        <Text style={{ color: colors.text, fontSize: 24, fontWeight: '800', letterSpacing: -0.4 }}>Hi {first}</Text>
-        {live.length > 0 ? <Badge text={`${live.length} live`} /> : today.length > 0 ? <Badge text={`${today.length} open`} /> : null}
-      </Row>
+      <WelcomeCard user={user} club={clubCtx.active} multi={clubCtx.multi}
+        badge={live.length > 0 ? <Badge text={`${live.length} live`} /> : today.length > 0 ? <Badge text={`${today.length} open`} /> : null} />
 
       {!user?.can_predict ? (
         <Card onPress={() => navigation.navigate('Verify')} style={{ marginTop: 12, borderColor: colors.warning }}>
@@ -136,7 +134,7 @@ export default function HomeScreen({ navigation }: any) {
                   <Row>
                     {won ? <ArrowUpIcon /> : lost ? <ArrowDownIcon /> : <HistoryIcon size={16} />}
                     <T style={{ marginLeft: 6, fontWeight: '800', color: won ? c.good : c.dim }}>
-                      {won ? `+${pts(b.reward)} 💎` : lost ? `−${pts(b.matched_amount)} 💎` : `${pts(b.reward)} 💎 back`}
+                      {won ? `+${pts(b.reward)} 💎` : lost ? `−${pts(b.matched_amount)} 💎` : `${pts((Number(b.matched_amount) > 0 ? Number(b.reward || 0) + Number(b.unmatched_refund || 0) : Number(b.original_amount ?? b.amount)))} 💎 returned`}
                     </T>
                   </Row>
                 </Row>

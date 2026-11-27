@@ -6,10 +6,14 @@ import { api, errMsg } from '../api';
 import { POLL_MS } from '../config';
 import { EventGroups } from '../components/EventGroups';
 import { Badge, Button, Card, CardSkeleton, Chip, ClubAvatar, ClubVerificationBadge, Dim, EmptyState, ErrorBox, Row, Screen, SectionHeader, T, c, pts, whenShort } from '../ui';
-import { DiamondIcon, TrophyIcon } from '../icons';
+import { CheckIcon, ChevronRightIcon, DiamondIcon, TrophyIcon, UsersIcon } from '../icons';
+import * as Clipboard from 'expo-clipboard';
 import { colors, radius } from '../theme';
 import type { ClubProfile } from '../types';
-import { showAlert } from '../dialog';
+import { showAlert, showToast } from '../dialog';
+import { useActiveClub, useClubContext } from '../club';
+import { RequestDiamondsSheet } from '../components/RequestDiamondsSheet';
+import { SuspendedNotice } from '../components/SuspendedNotice';
 
 type Tab = 'matches' | 'board' | 'about';
 type Period = 'week' | 'month' | 'all';
@@ -21,6 +25,24 @@ const Stat = ({ label, value }: { label: string; value: number | string }) => (
     <T style={{ fontWeight: '800', fontSize: 20 }}>{value}</T>
     <Dim style={{ fontSize: 12, marginTop: 2 }}>{label}</Dim>
   </View>
+);
+
+/** Small rounded fact: game type, member count, or the club ID (tap to copy). */
+function MetaChip({ children, onPress, label }: { children: React.ReactNode; onPress?: () => void; label?: string }) {
+  const style = { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 6, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.bg2, borderRadius: 999, paddingHorizontal: 11, minHeight: 34 };
+  return onPress
+    ? <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} hitSlop={4} style={({ pressed }) => [style, { opacity: pressed ? 0.8 : 1 }]}>{children}</Pressable>
+    : <View style={style}>{children}</View>;
+}
+const chipText = { color: colors.text, fontSize: 12.5, fontWeight: '700' as const };
+const copyId = (code: string) => Clipboard.setStringAsync(code).then(() => showToast('Club ID copied')).catch(() => showToast('Copy did not work', 'danger'));
+
+/** One line of the About list: label and hint on the left, the value on the right. */
+const InfoRow = ({ label, value, hint, first }: { label: string; value: React.ReactNode; hint?: string; first?: boolean }) => (
+  <Row style={{ paddingVertical: 12, borderTopWidth: first ? 0 : 1, borderTopColor: colors.line, gap: 12 }}>
+    <View style={{ flex: 1 }}><T style={{ fontWeight: '700' }}>{label}</T>{hint ? <Dim style={{ fontSize: 12.5 }}>{hint}</Dim> : null}</View>
+    {typeof value === 'string' ? <T style={{ fontWeight: '800', maxWidth: '50%', textAlign: 'right' }}>{value}</T> : value}
+  </Row>
 );
 
 function TabBar({ value, onChange, tabs }: { value: Tab; onChange: (t: Tab) => void; tabs: [Tab, string][] }) {
@@ -93,6 +115,10 @@ export default function ClubScreen({ route, navigation }: any) {
   const id: number = route.params.id;
   const qc = useQueryClient();
   const [tab, setTab] = useState<Tab>('matches');
+  const [allPast, setAllPast] = useState(false);
+  const [reqOpen, setReqOpen] = useState(false);   // request diamonds popup
+  const ctx = useClubContext();
+  const setActiveClub = useActiveClub((s) => s.set);
   const q = useQuery({ queryKey: ['club', id], refetchInterval: POLL_MS, queryFn: () => api.get<ClubProfile>(`/clubs/${id}/profile`) });
   const refresh = () => ['club', 'clubs', 'matches', 'home', 'wallets', 'leaderboard'].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
 
@@ -114,6 +140,9 @@ export default function ClubScreen({ route, navigation }: any) {
     approved ? `Your ${pts(cl.balance)} diamonds stay in the club. You can't predict here while you're away.` : undefined,
     [{ text: 'Stay', style: 'cancel' }, { text: cl.membership === 'pending' ? 'Cancel request' : 'Leave club', style: 'destructive', onPress: () => leave.mutate() }]);
 
+  const isHere = !ctx.multi || ctx.active?.id === id;
+  const game: [string, string] = cl?.club_pays ? ['Club multiplier', 'Win and the club pays your diamonds times the multiplier.'] : ['Player vs player', 'Your diamonds are matched against other players. Winners take the matched diamonds.'];
+  const members = Number(cl?.stats.members ?? 0);
   const tabs: [Tab, string][] = approved ? [['matches', 'Matches'], ['board', 'Leaderboard'], ['about', 'About']] : [['about', 'About']];
   const active: Tab = approved ? tab : 'about';
 
@@ -121,30 +150,83 @@ export default function ClubScreen({ route, navigation }: any) {
     <Screen title="Club" onRefresh={() => q.refetch()} refreshing={q.isRefetching}>
       {q.isLoading ? <CardSkeleton rows={3} kind="club" /> : q.error || !cl ? <ErrorBox error={q.error} onRetry={() => q.refetch()} /> : (
         <>
-          {cl.banner ? <Image source={{ uri: cl.banner }} style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: radius.lg, marginBottom: 10, backgroundColor: colors.card }} resizeMode="cover" accessibilityLabel={`${cl.name} banner`} /> : null}
-          <Row>
-            <ClubAvatar name={cl.name} logo={cl.logo} size={60} />
-            <View style={{ flex: 1, marginLeft: 12 }}>
-              <Row><Text style={{ color: colors.text, fontSize: 22, fontWeight: '800', flexShrink: 1 }} numberOfLines={2}>{cl.name}</Text>{cl.status === 'active' ? <ClubVerificationBadge /> : null}</Row>
-              <Dim>ID {cl.club_code} · {cl.club_pays ? 'Club multiplier' : 'Player vs player'}</Dim>
-            </View>
-          </Row>
-          {cl.tagline ? <T style={{ marginTop: 10, lineHeight: 21 }}>{cl.tagline}</T> : null}
-          {cl.status !== 'active' ? <Dim style={{ marginTop: 6 }}>Club {cl.status}</Dim> : null}
+          {/* header card: banner, logo, name and tagline, then the quick facts (game type, size, club ID to copy) */}
+          <View style={{ backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.line, overflow: 'hidden', marginBottom: 12 }}>
+            {cl.banner ? <Image source={{ uri: cl.banner }} style={{ width: '100%', aspectRatio: 16 / 9, backgroundColor: colors.bg2 }} resizeMode="cover" accessibilityLabel={`${cl.name} banner`} /> : null}
+            <View style={{ padding: 14 }}>
+              <Row style={{ gap: 12 }}>
+                <ClubAvatar name={cl.name} logo={cl.logo} size={60} />
+                <View style={{ flex: 1 }}>
+                  <Row><Text style={{ color: colors.text, fontSize: 22, fontWeight: '800', flexShrink: 1, letterSpacing: -0.3 }} numberOfLines={2}>{cl.name}</Text>{cl.status === 'active' ? <ClubVerificationBadge /> : null}</Row>
+                  {cl.tagline ? <Dim style={{ marginTop: 3 }} numberOfLines={2}>{cl.tagline}</Dim> : null}
+                </View>
+              </Row>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 12 }}>
+                <MetaChip><Text style={chipText}>{game[0]}</Text></MetaChip>
+                <MetaChip><UsersIcon size={14} color={colors.dim} /><Text style={chipText}>{pts(members)} member{members === 1 ? '' : 's'}</Text></MetaChip>
+                <MetaChip onPress={() => copyId(cl.club_code)} label={`Copy club ID ${cl.club_code}`}><Text style={chipText}>ID {cl.club_code}</Text><Text style={{ color: colors.primarySoft, fontWeight: '800', fontSize: 12.5 }}>⧉ Copy</Text></MetaChip>
+              </View>
+              {cl.status !== 'active' ? <Dim style={{ marginTop: 8 }}>Club {cl.status}</Dim> : null}
 
-          {approved ? (
-            <Row style={{ marginTop: 12, backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.line, padding: 12, justifyContent: 'space-between' }}>
-              <Row><DiamondIcon size={20} color={colors.primarySoft} /><Text style={{ color: colors.text, fontWeight: '800', fontSize: 20, marginLeft: 8 }}>{pts(cl.balance)}</Text><Dim style={{ marginLeft: 6 }}>diamonds here</Dim></Row>
-              <Badge text="approved" />
-            </Row>
-          ) : !cl.membership ? (
-            <Button title="Request to join" style={{ marginTop: 12 }} onPress={() => join.mutate(cl.club_code)} loading={join.isPending} />
-          ) : (
-            <Card style={{ marginTop: 12, borderColor: colors.amber + '66' }}>
+              {approved ? (
+                // your diamonds and your record here, with the most common action next to the balance
+                <View style={{ marginTop: 14, backgroundColor: colors.bg2, borderRadius: radius.md, borderWidth: 1, borderColor: colors.line, padding: 12 }}>
+                  <Row style={{ justifyContent: 'space-between' }}>
+                    <View>
+                      <Dim style={{ fontSize: 12.5 }}>Your diamonds here</Dim>
+                      <Row style={{ marginTop: 2 }}><DiamondIcon size={22} color={colors.primarySoft} /><Text style={{ color: colors.text, fontWeight: '800', fontSize: 28, marginLeft: 8, letterSpacing: -0.5 }}>{pts(cl.balance)}</Text></Row>
+                    </View>
+                    {cl.suspended ? null : <Button title="＋ Request" small style={{ paddingHorizontal: 18, minHeight: 44 }} onPress={() => setReqOpen(true)} />}
+                  </Row>
+                  <Row style={{ marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.line }}>
+                    {([['Predictions', cl.stats.my_predictions, colors.text], ['Active', cl.stats.my_active, colors.primarySoft], ['Won', cl.stats.my_won, colors.success], ['Lost', cl.stats.my_lost, cl.stats.my_lost ? colors.danger : colors.text]] as [string, number, string][]).map(([l, v, col]) => (
+                      <View key={l} style={{ flex: 1, alignItems: 'center' }}>
+                        <Text style={{ color: col, fontWeight: '800', fontSize: 18 }}>{pts(v)}</Text>
+                        <Dim style={{ fontSize: 11.5 }}>{l}</Dim>
+                      </View>
+                    ))}
+                  </Row>
+                  {cl.suspended
+                    ? <Row style={{ marginTop: 10, gap: 6 }}><Text style={{ color: colors.danger, fontSize: 12 }}>●</Text><Text style={{ color: colors.danger, fontWeight: '700', fontSize: 12.5 }}>Suspended member</Text></Row>
+                    : <Row style={{ marginTop: 10, gap: 6 }}><CheckIcon size={15} color={colors.success} /><Text style={{ color: colors.success, fontWeight: '700', fontSize: 12.5 }}>Verified member</Text></Row>}
+                </View>
+              ) : null}
+              {approved && cl.referral && !cl.suspended ? (
+                // referrals on: one tidy row in the header card (not a loose button)
+                <Pressable onPress={() => navigation.navigate('Referral', { clubId: cl.id })} accessibilityRole="button" accessibilityLabel={`Invite friends to ${cl.name} and earn diamonds`}
+                  style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 10, paddingHorizontal: 12, paddingVertical: 10, minHeight: 56,
+                    backgroundColor: colors.success + '14', borderWidth: 1, borderColor: colors.success + '55', borderRadius: radius.md, opacity: pressed ? 0.85 : 1 })}>
+                  <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: colors.success + '26', alignItems: 'center', justifyContent: 'center' }}><Text style={{ fontSize: 19 }}>🎁</Text></View>
+                  <View style={{ flex: 1 }}>
+                    <T style={{ fontWeight: '800' }}>Invite friends</T>
+                    <Dim style={{ fontSize: 12.5 }} numberOfLines={2}>Earn {cl.referral.text}</Dim>
+                  </View>
+                  <ChevronRightIcon size={18} />
+                </Pressable>
+              ) : null}
+              {!approved && !cl.membership ? (
+                <>
+                  <Button title="Request to join" style={{ marginTop: 14 }} onPress={() => join.mutate(cl.club_code)} loading={join.isPending} />
+                  <Dim style={{ marginTop: 8 }}>The club owner verifies you first. Then you can see matches and make predictions.</Dim>
+                </>
+              ) : null}
+            </View>
+          </View>
+
+          {approved && cl.suspended ? <SuspendedNotice club={cl} style={{ marginBottom: 12 }} /> : null}
+
+          {cl.membership && !approved ? (
+            <Card style={{ borderColor: colors.amber + '66' }}>
               <Row style={{ justifyContent: 'space-between' }}><T style={{ fontWeight: '700' }}>Request sent</T><Badge text={cl.membership} /></Row>
               <Dim style={{ marginTop: 4 }}>Waiting for the club owner to verify you. Matches and the leaderboard unlock once you are approved.</Dim>
             </Card>
-          )}
+          ) : null}
+
+          {/* enter this club: only when you're in several clubs and this isn't the one you're in */}
+          {approved && !isHere ? (
+            <Button title="Enter this club" style={{ marginBottom: 4 }}
+              onPress={() => { setActiveClub(cl.id); showToast(`You're in ${cl.name}`); navigation.navigate('Tabs', { screen: 'Home' }); }} />
+          ) : null}
 
           {approved ? <TabBar value={active} onChange={setTab} tabs={tabs} /> : null}
 
@@ -153,22 +235,38 @@ export default function ClubScreen({ route, navigation }: any) {
               {cl.my_current.length > 0 ? (
                 <>
                   <SectionHeader title="My current predictions" />
-                  {cl.my_current.map((p) => (
-                    <Card key={p.id} onPress={() => open({ id: p.match_id })} style={{ paddingVertical: 12 }}>
-                      <T style={{ fontWeight: '700' }} numberOfLines={1}>{p.match}</T>
-                      <Dim>{p.side_name} · {pts(p.amount)} 💎 · matched {pts(p.matched_amount)} · {whenShort(p.created_at)}</Dim>
-                    </Card>
-                  ))}
+                  {cl.my_current.map((p) => {
+                    const full = Number(p.matched_amount) >= Number(p.amount);
+                    const col = full ? colors.success : colors.primarySoft;
+                    return (
+                      <Card key={p.id} onPress={() => open({ id: p.match_id })} style={{ paddingVertical: 12 }}>
+                        <Row style={{ gap: 10 }}>
+                          <View style={{ flex: 1 }}>
+                            <T style={{ fontWeight: '700' }} numberOfLines={1}>{p.match}</T>
+                            <T style={{ fontWeight: '700', fontSize: 14, marginTop: 3 }}>Your pick: {p.side_name} · {pts(p.amount)} 💎</T>
+                            <Dim style={{ fontSize: 12.5 }}>{whenShort(p.created_at)}</Dim>
+                          </View>
+                          <View style={{ borderWidth: 1, borderColor: col + '66', borderRadius: 999, paddingHorizontal: 9, paddingVertical: 4 }}>
+                            <Text style={{ color: col, fontWeight: '800', fontSize: 11.5 }}>{full ? 'Fully matched' : `Matched ${pts(p.matched_amount)} of ${pts(p.amount)}`}</Text>
+                          </View>
+                          <ChevronRightIcon size={18} />
+                        </Row>
+                      </Card>
+                    );
+                  })}
                 </>
               ) : null}
               <SectionHeader title="Open and upcoming" />
               {cl.current_matches.length === 0
                 ? <EmptyState title="Nothing open right now" text="New events and matches from this club will appear here." />
-                : <EventGroups matches={cl.current_matches} onOpen={open} />}
+                : <EventGroups matches={cl.current_matches} onOpen={open} hideClub />}
               {cl.past_matches.length > 0 ? (
                 <>
                   <SectionHeader title="Ended in the last 7 days" />
-                  <EventGroups matches={cl.past_matches} onOpen={open} />
+                  <EventGroups matches={allPast ? cl.past_matches : cl.past_matches.slice(0, 3)} onOpen={open} hideClub />
+                  {cl.past_matches.length > 3 ? (
+                    <Button title={allPast ? 'Show fewer' : `Show all ${cl.past_matches.length} finished matches`} kind="ghost" small onPress={() => setAllPast(!allPast)} />
+                  ) : null}
                 </>
               ) : null}
             </>
@@ -178,20 +276,19 @@ export default function ClubScreen({ route, navigation }: any) {
 
           {active === 'about' ? (
             <>
-              <SectionHeader title="Club" />
+              <SectionHeader title="About this club" />
               <Row style={{ gap: 10 }}>
-                <Stat label="Members" value={cl.stats.members} />
-                <Stat label="Matches" value={cl.stats.matches} />
-                <Stat label="Predictions" value={cl.stats.club_predictions} />
+                <Stat label="Members" value={pts(cl.stats.members)} />
+                <Stat label="Matches" value={pts(cl.stats.matches)} />
+                <Stat label="Predictions" value={pts(cl.stats.club_predictions)} />
               </Row>
-              <Dim style={{ marginTop: 10 }}>ID verification: {cl.id_required === false ? 'not required in this club' : 'required before you can predict'}.</Dim>
-              {Number(cl.commission_pct) > 0 ? <Dim style={{ marginTop: 10 }}>Club fee: {cl.commission_pct}% of winnings is kept by the club.</Dim> : null}
-              {approved && cl.referral ? (
-                <Card onPress={() => navigation.navigate('Referral', { clubId: id })} style={{ marginTop: 12, borderColor: colors.success + '88' }}>
-                  <T style={{ fontWeight: '800' }}>Refer friends, earn diamonds 🎁</T>
-                  <Dim style={{ marginTop: 2 }}>Earn {cl.referral.text}. Tap to get your link.</Dim>
-                </Card>
-              ) : null}
+              <Card style={{ marginTop: 10, paddingVertical: 2 }}>
+                <InfoRow first label="Game type" value={game[0]} hint={game[1]} />
+                <InfoRow label="ID check" value={cl.id_required === false ? 'Not needed' : 'Required'} hint={cl.id_required === false ? 'You can predict without sending an ID.' : 'Verify your ID before your first prediction.'} />
+                {Number(cl.commission_pct) > 0 ? <InfoRow label="Club fee" value={`${cl.commission_pct}%`} hint="Kept by the club from winnings." /> : null}
+                <InfoRow label="Club ID" hint="Friends join with this ID."
+                  value={<MetaChip onPress={() => copyId(cl.club_code)} label={`Copy club ID ${cl.club_code}`}><Text style={chipText}>{cl.club_code}</Text><Text style={{ color: colors.primarySoft, fontWeight: '800' }}>⧉</Text></MetaChip>} />
+              </Card>
               {approved && cl.join_qr_svg ? (
                 <>
                   <SectionHeader title="Invite to this club" />
@@ -210,28 +307,20 @@ export default function ClubScreen({ route, navigation }: any) {
                   </Card>
                 </>
               ) : null}
-              {approved ? (
-                <>
-                  <SectionHeader title="My record here" />
-                  <Row style={{ gap: 10 }}>
-                    <Stat label="All" value={cl.stats.my_predictions} />
-                    <Stat label="Active" value={cl.stats.my_active} />
-                    <Stat label="Won" value={cl.stats.my_won} />
-                    <Stat label="Lost" value={cl.stats.my_lost} />
-                  </Row>
-                </>
-              ) : null}
               {cl.membership ? (
-                <>
-                  <SectionHeader title="Membership" />
-                  <Button title={cl.membership === 'pending' ? 'Cancel join request' : 'Leave club'} kind="ghost" onPress={askLeave} loading={leave.isPending} />
-                  {approved ? <Dim style={{ marginTop: 8 }}>Your diamonds stay in the club if you leave. The owner must approve you again if you rejoin.</Dim> : null}
-                </>
+                // leaving is rare and final: a quiet red action at the very end, with a confirm
+                <View style={{ marginTop: 18, paddingTop: 6, borderTopWidth: 1, borderTopColor: colors.line }}>
+                  <Pressable onPress={askLeave} accessibilityRole="button" disabled={leave.isPending} style={{ minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' }}>
+                    <Text style={{ color: colors.danger, fontWeight: '800', fontSize: 15 }}>{leave.isPending ? 'Leaving…' : cl.membership === 'pending' ? 'Cancel join request' : 'Leave club'}</Text>
+                  </Pressable>
+                  {approved ? <Dim>Your diamonds stay in the club if you leave. The owner must approve you again if you rejoin.</Dim> : null}
+                </View>
               ) : null}
             </>
           ) : null}
         </>
       )}
+      {reqOpen && cl ? <RequestDiamondsSheet clubId={cl.id} onClose={() => setReqOpen(false)} /> : null}
     </Screen>
   );
 }

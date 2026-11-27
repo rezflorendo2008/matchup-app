@@ -8,6 +8,8 @@ import type { Match } from '../types';
 
 export type { OpenMatch };
 
+const RESULT: Record<string, string> = { draw: 'Draw · diamonds returned', cancel: 'Cancelled · diamonds returned' };
+
 /** One match inside an event card: title, status and a prediction button for each side. */
 export function MatchRow({ m, onOpen }: { m: Match; onOpen: OpenMatch }) {
   return (
@@ -38,7 +40,7 @@ export function MatchRow({ m, onOpen }: { m: Match; onOpen: OpenMatch }) {
           <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15 }}>{m.status === 'open' ? 'View match & predict' : 'View match'}</Text>
         </Pressable>
       ) : null}
-      {m.status === 'settled' && m.result && m.result !== 'a' && m.result !== 'b' ? <Text style={{ color: colors.dim, fontSize: 12.5, marginTop: 6 }}>Result: {m.result}</Text> : null}
+      {m.status === 'settled' && RESULT[m.result ?? ''] ? <Text style={{ color: colors.dim, fontSize: 12.5, marginTop: 6 }}>{RESULT[m.result ?? '']}</Text> : null}
     </View>
   );
 }

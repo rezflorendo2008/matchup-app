@@ -12,6 +12,8 @@ import { CheckIcon, ChevronDownIcon, ChevronRightIcon } from '../icons';
 import { colors, radius, spacing } from '../theme';
 import type { Prediction, Club, Match } from '../types';
 import { showAlert } from '../dialog';
+import { RequestDiamondsSheet } from '../components/RequestDiamondsSheet';
+import { SuspendedNotice } from '../components/SuspendedNotice';
 
 type Side = 'a' | 'b';
 type Participants = { total: number; total_a: number; total_b: number; count: number; players: number;
@@ -162,6 +164,7 @@ export default function PredictionScreen({ route, navigation }: any) {
   const user = useAuth((s) => s.user);
   const [side, setSide] = useState<Side | null>(route.params?.side ?? null);
   const [amount, setAmount] = useState('');
+  const [reqOpen, setReqOpen] = useState(false);   // request diamonds popup
   const [editing, setEditing] = useState<Prediction | null>(null);
   const [pending, setPending] = useState<Prediction | null>(null);
 
@@ -171,11 +174,12 @@ export default function PredictionScreen({ route, navigation }: any) {
   const pq = useQuery({ queryKey: ['match-participants', id], queryFn: () => api.get<Participants>(`/matches/${id}/participants`), refetchInterval: POLL_MS });
 
   const m = mq.data;
-  const balance = Number(clubs.data?.find((x) => x.id === m?.club_id)?.balance ?? 0);
+  const myClub = clubs.data?.find((x) => x.id === m?.club_id);
+  const balance = Number(myClub?.balance ?? 0);
   const mine = (predictions.data?.data ?? []).filter((b) => b.match_id === id && ['confirmed', 'won', 'lost', 'refunded'].includes(b.status));
   const open = !!m?.predictions_open;
   // owners and match agents decide results, so they don't predict on their club's matches
-  const canPredict = !!user?.can_predict && open && !m?.can_manage;
+  const canPredict = !!user?.can_predict && open && !m?.can_manage && !myClub?.suspended;   // suspended by the club: can look, not predict
   const amt = Number(amount);
   const max = m?.max_diamonds ? Number(m.max_diamonds) : null;
   const overMax = max != null && amt > max;
@@ -278,7 +282,8 @@ export default function PredictionScreen({ route, navigation }: any) {
       })() : null}
 
       {/* Why the player can't predict right now */}
-      {!user?.can_predict && open && !m.can_manage ? (
+      {myClub?.suspended && open && !m.can_manage ? <SuspendedNotice club={myClub} style={{ marginTop: 14 }} />
+      : !user?.can_predict && open && !m.can_manage ? (
         <Card style={{ marginTop: 14, borderColor: c.warn }}>
           <T style={{ fontWeight: '800' }}>Verify your account to predict</T>
           <Dim style={{ marginTop: 2 }}>Confirm your email and ID. Takes about 2 minutes.</Dim>
@@ -315,7 +320,7 @@ export default function PredictionScreen({ route, navigation }: any) {
             {overBalance && !overMax ? (
               <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <View style={{ flex: 1, marginRight: 8 }}><FieldError text={`You only have ${pts(balance)} 💎 here.`} /></View>
-                <Pressable onPress={() => navigation.navigate('AddDiamonds')} hitSlop={8} style={{ marginTop: 6 }}><Text style={{ color: colors.primarySoft, fontWeight: '800' }}>Get diamonds</Text></Pressable>
+                <Pressable onPress={() => setReqOpen(true)} hitSlop={8} style={{ marginTop: 6 }}><Text style={{ color: colors.primarySoft, fontWeight: '800' }}>Get diamonds</Text></Pressable>
               </Row>
             ) : null}
             {win && side ? (
@@ -387,6 +392,7 @@ export default function PredictionScreen({ route, navigation }: any) {
           </View>
         </View>
       </Modal>
+      {reqOpen ? <RequestDiamondsSheet clubId={m.club_id} onClose={() => setReqOpen(false)} /> : null}
     </Screen>
   );
 }

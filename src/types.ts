@@ -27,10 +27,13 @@ export interface Prediction {
   status: string; reward: number | null; can_edit: boolean; created_at: string;
   /** player vs player: who it was matched against (in order), what came back unmatched, and the amount first predicted */
   matched_with?: { name: string; amount: number; self?: boolean }[]; unmatched_refund?: number | null; original_amount?: number;
+  side_name?: string; match_status?: string; result?: string | null;
 }
 export interface Club {
   id: number; name: string; club_code: string; logo: string | null; banner?: string | null; id_required?: boolean; referral?: { text: string } | null; club_pays: boolean; commission_pct: number; status: string;
   membership: string | null; balance: number | null;
+  /** suspended by the club: still a member, but can't predict, request diamonds or earn from referrals */
+  suspended?: boolean; suspend_reason?: string | null;
 }
 export interface ClubProfile extends Club {
   tagline: string | null; can_predict: boolean;

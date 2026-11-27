@@ -4,7 +4,7 @@ import {
   ActivityIndicator, Animated, Easing, Image, KeyboardAvoidingView, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TextInputProps, View, ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 import { api } from './api';
 import { POLL_MS } from './config';
@@ -67,11 +67,13 @@ export function DiamondWalletButton() {
   );
 }
 
-/** The club you're in, next to the diamonds (only with 2+ clubs); tap to switch. */
+/** The club you're in, next to the diamonds (only with 2+ clubs, not on Home); tap to switch. */
 export function ClubChip() {
   const nav = useNavigation<any>();
+  const route = useRoute();
   const { multi, active } = useClubContext();
-  if (!multi) return null;
+  // only on subpages: on Home the welcome card has Switch club
+  if (!multi || route.name === 'Home') return null;
   return (
     <PressScale onPress={() => nav.navigate('ChooseClub')} accessibilityLabel={active ? `Club: ${active.name}. Switch club` : 'Choose a club'} hitSlop={6}
       style={{ flexDirection: 'row', alignItems: 'center', height: 40, maxWidth: 140, paddingLeft: 6, paddingRight: 10, marginRight: 8, borderRadius: 20, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line }}>
@@ -282,7 +284,7 @@ export function Chip({ label, active, onPress, disabled, style }: { label: strin
 const tone: Record<string, string> = {
   open: colors.success, won: colors.success, approved: colors.success, verified: colors.success, active: colors.success, confirmed: colors.primary, upcoming: colors.primary,
   paused: colors.amber, pending: colors.amber, pending_confirm: colors.amber, closed: colors.dim, settled: colors.dim,
-  lost: colors.danger, rejected: colors.danger, blocked: colors.danger, refunded: colors.dim, cancelled: colors.dim,
+  lost: colors.danger, rejected: colors.danger, blocked: colors.danger, suspended: colors.danger, refunded: colors.dim, cancelled: colors.dim,
 };
 export function Badge({ text }: { text: string }) {
   const col = tone[text] ?? colors.dim;

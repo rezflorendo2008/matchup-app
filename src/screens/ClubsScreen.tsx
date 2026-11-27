@@ -6,7 +6,8 @@ import { Badge, Button, Card, CardSkeleton, ClubAvatar, ClubVerificationBadge, D
 import { ChevronRightIcon, DiamondIcon, SearchIcon } from '../icons';
 import { colors, radius } from '../theme';
 import type { Club } from '../types';
-import { showAlert } from '../dialog';
+import { showAlert, showToast } from '../dialog';
+import { useActiveClub, useClubContext } from '../club';
 
 export default function ClubsScreen({ route, navigation }: any) {
   const qc = useQueryClient();
@@ -14,6 +15,11 @@ export default function ClubsScreen({ route, navigation }: any) {
   const [found, setFound] = useState<Club | null>(null);
   const [ref, setRef] = useState<string>(route?.params?.ref ?? '');
   const clubs = useQuery({ queryKey: ['clubs'], queryFn: () => api.get<Club[]>('/clubs') });
+  const ctx = useClubContext();
+  const setActiveClub = useActiveClub((s) => s.set);
+  // the join form stays tucked away until asked for (or opened from an invite link)
+  const [showJoin, setShowJoin] = useState<boolean>(!!(route?.params?.ref || route?.params?.slug));
+  useEffect(() => { if (route?.params?.ref || route?.params?.slug) setShowJoin(true); }, [route?.params?.ref, route?.params?.slug]);
 
   const refresh = () => ['clubs', 'matches', 'home', 'wallets'].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
 
@@ -68,8 +74,11 @@ export default function ClubsScreen({ route, navigation }: any) {
       {clubs.isLoading ? <CardSkeleton rows={2} kind="club" /> : clubs.error ? <ErrorBox error={clubs.error} onRetry={() => clubs.refetch()} />
         : !hasNone ? (
           <>
-            {list.map((cl) => (
-              <Card key={cl.id} onPress={() => navigation.navigate('Club', { id: cl.id })} style={{ paddingVertical: 12 }}>
+            {list.map((cl) => {
+              const here = ctx.multi && ctx.active?.id === cl.id;
+              const canEnter = ctx.multi && cl.membership === 'approved' && !here;
+              return (
+              <Card key={cl.id} onPress={() => navigation.navigate('Club', { id: cl.id })} style={{ paddingVertical: 12, ...(here ? { borderColor: colors.primary } : {}) }}>
                 <Row style={{ justifyContent: 'space-between' }}>
                   <ClubTitle club={cl} />
                   <ChevronRightIcon />
@@ -79,12 +88,30 @@ export default function ClubsScreen({ route, navigation }: any) {
                     ? <Row><DiamondIcon size={16} color={colors.primarySoft} /><Text style={{ color: colors.text, fontWeight: '800', fontSize: 15, marginLeft: 6 }}>{pts(cl.balance)}</Text><Dim style={{ marginLeft: 5 }}>diamonds</Dim></Row>
                     : <Dim style={{ flex: 1 }}>Waiting for the club owner to verify you</Dim>}
                   {cl.membership && cl.membership !== 'approved' ? <Badge text={cl.membership} /> : null}
+                  {cl.suspended ? <Badge text="suspended" /> : null}
                   {cl.status !== 'active' ? <Badge text={cl.status} /> : null}
+                  {here ? (
+                    <View style={{ backgroundColor: colors.success + '22', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 }}>
+                      <Text style={{ color: colors.success, fontWeight: '800', fontSize: 12 }}>● You're here</Text>
+                    </View>
+                  ) : null}
+                  {canEnter ? (
+                    <Pressable accessibilityRole="button" accessibilityLabel={`Enter ${cl.name}`} hitSlop={6}
+                      onPress={() => { setActiveClub(cl.id); showToast(`You're in ${cl.name}`); navigation.navigate('Tabs', { screen: 'Home' }); }}
+                      style={({ pressed }) => ({ backgroundColor: colors.primary, borderRadius: 999, paddingHorizontal: 16, minHeight: 36, justifyContent: 'center', opacity: pressed ? 0.85 : 1 })}>
+                      <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>Enter</Text>
+                    </Pressable>
+                  ) : null}
                 </Row>
               </Card>
-            ))}
-            <SectionHeader title="Join another club" />
-            {joinCard}
+              );
+            })}
+            {showJoin ? (
+              <>
+                <SectionHeader title="Join another club" />
+                {joinCard}
+              </>
+            ) : <Button title="＋ Join another club" kind="ghost" style={{ marginTop: 4 }} onPress={() => setShowJoin(true)} />}
           </>
         ) : null}
     </Screen>

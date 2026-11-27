@@ -13,6 +13,7 @@ const detail = (m: Match, k: 'a' | 'b') => (m.mode === 'club' ? `×${(k === 'a' 
 /** "You predicted 120 💎" for this user on one match (shown on every match card). */
 export function MyPredicted({ m, style }: { m: Match; style?: any }) {
   const v = Number(m.my_diamonds ?? 0);
+  if (m.status === 'settled' && v <= 0) return null;   // finished and not predicted: nothing to say
   return (
     <Text style={[{ color: v > 0 ? colors.primarySoft : colors.dim, fontSize: 12.5, fontWeight: v > 0 ? '800' : '500' }, style]}>
       {v > 0 ? `You predicted ${pts(v)} 💎` : 'No prediction yet'}
@@ -44,7 +45,7 @@ export function TeamPlayerCard({ m, k, onOpen, compact, dense, mini }: { m: Matc
       <TeamAvatar name={name} color={col} size={mini ? 22 : dense ? 32 : compact ? 38 : 46} />
       {m.has_score && (m.score_a != null || m.score_b != null) ? <Text style={{ color: colors.text, fontSize: mini ? 17 : dense ? 20 : compact ? 24 : 30, fontWeight: '800', marginTop: mini ? 2 : dense ? 3 : 6, letterSpacing: -0.5 }}>{(k === 'a' ? m.score_a : m.score_b) ?? 0}</Text> : null}
       <Text style={{ color: colors.text, fontWeight: '700', fontSize: mini ? 11.5 : dense ? 13 : 14, marginTop: mini ? 2 : dense ? 5 : 8, textAlign: 'center' }} numberOfLines={mini || dense ? 1 : 2}>{name}</Text>
-      <Text style={{ color: won ? colors.success : col, fontSize: mini ? 11 : dense ? 11.5 : 12, fontWeight: '700', marginTop: 1, textAlign: 'center' }}>{won ? '🏆 Won' : detail(m, k)}</Text>
+      <Text style={{ color: won ? colors.success : m.status === 'settled' ? colors.dim : col, fontSize: mini ? 11 : dense ? 11.5 : 12, fontWeight: '700', marginTop: 1, textAlign: 'center' }}>{won ? '🏆 Won' : m.status === 'settled' ? (m.result === 'draw' ? 'Draw' : m.result === 'cancel' ? 'Cancelled' : 'Lost') : detail(m, k)}</Text>
     </PressScale>
   );
 }

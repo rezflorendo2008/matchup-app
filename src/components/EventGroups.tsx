@@ -16,7 +16,7 @@ export function groupByEvent(list: Match[]): Group[] {
     const key = m.event_id ? `e${m.event_id}` : `none-${m.club_id}`;
     let g = map.get(key);
     if (!g) {
-      g = { key, title: m.event ?? 'Other matches', category: `${m.category_icon ? m.category_icon + ' ' : ''}${m.category ?? ''}`.trim(),
+      g = { key, title: m.event ?? 'Matches', category: `${m.category_icon ? m.category_icon + ' ' : ''}${m.category ?? ''}`.trim(),
         club: m.club, logo: m.club_logo, verified: m.club_verified, matches: [], rank: 9, start: m.event_starts_at ? new Date(m.event_starts_at).getTime() : 0 };
       map.set(key, g);
     }
@@ -31,8 +31,8 @@ export function groupByEvent(list: Match[]): Group[] {
 }
 
 /** Event name, "by club" with its icon and verified tick, then all the event's matches in the same card. */
-export function EventCard({ title, category, club, logo, verified, start, matches, onOpen, collapsible = true }: {
-  title: string; category: string; club: string; logo: string | null; verified: boolean; start?: number; matches: Match[]; onOpen: OpenMatch; collapsible?: boolean;
+export function EventCard({ title, category, club, logo, verified, start, matches, onOpen, collapsible = true, hideClub }: {
+  hideClub?: boolean; title: string; category: string; club: string; logo: string | null; verified: boolean; start?: number; matches: Match[]; onOpen: OpenMatch; collapsible?: boolean;
 }) {
   const [shut, setShut] = useState(false);
   return (
@@ -41,12 +41,12 @@ export function EventCard({ title, category, club, logo, verified, start, matche
         <Row style={{ justifyContent: 'space-between' }}>
           <View style={{ flex: 1 }}>
             <T style={{ fontWeight: '800', fontSize: 15 }}>{title}</T>
-            <Row style={{ marginTop: 4 }}>
+            {hideClub ? null : <Row style={{ marginTop: 4 }}>
               <Dim style={{ fontSize: 12 }}>by </Dim>
               <ClubAvatar name={club} logo={logo} size={15} />
               <T style={{ fontWeight: '600', flexShrink: 1, fontSize: 13 }} numberOfLines={1}>{club}</T>
               {verified ? <ClubVerificationBadge size={14} /> : null}
-            </Row>
+            </Row>}
             <Dim style={{ marginTop: 3, fontSize: 12 }}>{category ? `${category} · ` : ''}{matches.length} match{matches.length === 1 ? '' : 'es'}{start ? ` · ${when(new Date(start).toISOString())}` : ''}</Dim>
           </View>
           {collapsible ? (shut ? <ChevronRightIcon size={20} /> : <ChevronDownIcon size={20} />) : null}
@@ -57,11 +57,11 @@ export function EventCard({ title, category, club, logo, verified, start, matche
   );
 }
 
-export function EventGroups({ matches, onOpen }: { matches: Match[]; onOpen: OpenMatch }) {
+export function EventGroups({ matches, onOpen, hideClub }: { matches: Match[]; onOpen: OpenMatch; hideClub?: boolean }) {
   const groups = useMemo(() => groupByEvent(matches), [matches]);
   return (
     <>
-      {groups.map((g) => <EventCard key={g.key} title={g.title} category={g.category} club={g.club} logo={g.logo} verified={g.verified} start={g.start} matches={g.matches} onOpen={onOpen} />)}
+      {groups.map((g) => <EventCard key={g.key} title={g.title} category={g.category} club={g.club} logo={g.logo} verified={g.verified} start={g.start} matches={g.matches} onOpen={onOpen} hideClub={hideClub} />)}
     </>
   );
 }
