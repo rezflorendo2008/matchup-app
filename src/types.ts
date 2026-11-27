@@ -7,6 +7,8 @@ export interface User {
   pending_clubs?: string[];
   /** account settings: verified mobile (required when the admin switches it on) and an email change waiting for its code */
   mobile_verified?: boolean; mobile_required?: boolean; pending_email?: string | null;
+  /** one of the player's clubs has Refer & earn switched on */
+  referral_enabled?: boolean;
 }
 export interface Category { id: number; name: string; slug: string; icon: string | null }
 export interface LiveVideo { url: string; provider: 'youtube' | 'facebook' | 'twitch' | 'link'; embed_url: string | null }

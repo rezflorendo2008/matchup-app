@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Constants from 'expo-constants';
-import { Linking, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, errMsg } from '../api';
 import { ORIGIN, POLL_MS } from '../config';
@@ -12,7 +12,9 @@ import { colors, radius } from '../theme';
 import type { User } from '../types';
 import { AccountSheet, AccountSheets } from '../components/AccountSheets';
 import { PlayerIdCard } from '../components/PlayerIdCard';
+import { LegalSheet, LegalSlug } from '../components/LegalSheet';
 import { showAlert } from '../dialog';
+import { useFocusEffect } from '@react-navigation/native';
 
 function MenuRow({ icon, label, value, onPress, danger }: { icon: React.ReactNode; label: string; value?: string; onPress: () => void; danger?: boolean }) {
   return (
@@ -28,6 +30,25 @@ function MenuRow({ icon, label, value, onPress, danger }: { icon: React.ReactNod
 }
 
 /** A grouped list: rows share one card with thin dividers, so the page stays short and scannable. */
+/** A row that only shows information (not tappable), with an optional small button on the right. */
+function InfoRow({ icon, label, value, action, onAction }: { icon: React.ReactNode; label: string; value: string; action?: string; onAction?: () => void }) {
+  return (
+    <View style={{ paddingVertical: 12, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center' }}>
+      <View style={{ width: 32, alignItems: 'center', marginRight: 10 }}>{icon}</View>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <T style={{ fontWeight: '600' }}>{label}</T>
+        <Dim style={{ fontSize: 13, marginTop: 2 }} numberOfLines={1}>{value}</Dim>
+      </View>
+      {action && onAction ? (
+        <PressScale onPress={onAction} accessibilityLabel={`${action} ${label.toLowerCase()}`} hitSlop={6}
+          style={{ marginLeft: 10, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.primary + '66', backgroundColor: colors.primary + '1F', paddingHorizontal: 14, paddingVertical: 7 }}>
+          <Text style={{ color: colors.primarySoft, fontWeight: '800', fontSize: 13.5 }}>{action}</Text>
+        </PressScale>
+      ) : null}
+    </View>
+  );
+}
+
 function Group({ children }: { children: React.ReactNode[] | React.ReactNode }) {
   const items = React.Children.toArray(children).filter(Boolean);
   return (
@@ -62,10 +83,13 @@ export default function ProfileScreen({ navigation }: any) {
   const [name, setName] = useState(user.name);
   const [busy, setBusy] = useState(false);
   const [sheet, setSheet] = useState<AccountSheet>(null);
+  const [legal, setLegal] = useState<LegalSlug | null>(null);
   // Keep the badge fresh: an owner may have verified this account since the app last loaded it.
   const me = useQuery({ queryKey: ['me'], queryFn: () => api.get<User>('/me'), refetchInterval: POLL_MS });
+  // fresh on every visit: the owner may have changed things (verification, Refer & earn) since
+  useFocusEffect(React.useCallback(() => { me.refetch(); }, []));
   useEffect(() => { if (me.data && (me.data.kyc_status !== user.kyc_status || me.data.can_predict !== user.can_predict || me.data.phone_verified !== user.phone_verified
-    || me.data.mobile_required !== user.mobile_required || me.data.mobile_verified !== user.mobile_verified || me.data.email !== user.email || me.data.pending_email !== user.pending_email)) setUser(me.data); }, [me.data]);
+    || me.data.mobile_required !== user.mobile_required || me.data.mobile_verified !== user.mobile_verified || me.data.email !== user.email || me.data.pending_email !== user.pending_email || me.data.referral_enabled !== user.referral_enabled)) setUser(me.data); }, [me.data]);
 
   const save = async () => {
     setBusy(true);
@@ -109,7 +133,7 @@ export default function ProfileScreen({ navigation }: any) {
 
       <SectionHeader title="My activity" />
       <Group>
-        <MenuRow icon={<DiamondIcon size={20} color={colors.success} />} label="Refer & earn" onPress={() => navigation.navigate('Referral')} />
+        {user.referral_enabled ? <MenuRow icon={<DiamondIcon size={20} color={colors.success} />} label="Refer & earn" onPress={() => navigation.navigate('Referral')} /> : null}
         <MenuRow icon={<BellIcon size={20} color={colors.primarySoft} />} label="Notifications" onPress={() => navigation.navigate('Alerts')} />
         <MenuRow icon={<DiamondIcon size={20} color={colors.primarySoft} />} label="My diamonds" onPress={() => navigation.navigate('Diamonds')} />
         <MenuRow icon={<HistoryIcon size={20} color={colors.primarySoft} />} label="Prediction history" onPress={() => navigation.navigate('History')} />
@@ -129,7 +153,9 @@ export default function ProfileScreen({ navigation }: any) {
         <Group>
           <MenuRow icon={<Text style={{ fontSize: 18 }}>✏️</Text>} label="Display name" value={user.name}
             onPress={() => (nextChange ? showAlert('Display name', `You can change your display name once a week. Next change: ${nextChange.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}.`) : setEditing(true))} />
-          <MenuRow icon={<Text style={{ fontSize: 18 }}>✉️</Text>} label="Email" value={user.pending_email ? 'Waiting for code' : (user.email ?? 'Add email')} onPress={() => setSheet('email')} />
+          {/* the address itself is only information; changing it is the separate button */}
+          <InfoRow icon={<Text style={{ fontSize: 18 }}>✉️</Text>} label="Email" value={user.pending_email ? `${user.email ?? ''} · new address waiting for its code` : (user.email ?? 'No email yet')}
+            action={user.email ? 'Change' : 'Add'} onAction={() => setSheet('email')} />
           <MenuRow icon={<ShieldIcon size={20} color={colors.primarySoft} />} label="Password" value="Change" onPress={() => setSheet('password')} />
           {user.mobile_required || user.phone ? (
             <MenuRow icon={<Text style={{ fontSize: 18 }}>📱</Text>} label="Mobile number" value={user.phone ? `${user.phone}${user.mobile_verified ? ' ✓' : ' · verify'}` : 'Add and verify'} onPress={() => setSheet('mobile')} />
@@ -142,8 +168,8 @@ export default function ProfileScreen({ navigation }: any) {
 
       <SectionHeader title="About" />
       <Group>
-        <MenuRow icon={<ShieldIcon size={20} color={colors.primarySoft} />} label="Privacy policy" onPress={() => Linking.openURL(`${ORIGIN}/privacy`)} />
-        <MenuRow icon={<ShieldIcon size={20} color={colors.primarySoft} />} label="Terms of use" onPress={() => Linking.openURL(`${ORIGIN}/terms`)} />
+        <MenuRow icon={<ShieldIcon size={20} color={colors.primarySoft} />} label="Privacy policy" onPress={() => setLegal('privacy')} />
+        <MenuRow icon={<ShieldIcon size={20} color={colors.primarySoft} />} label="Terms of use" onPress={() => setLegal('terms')} />
       </Group>
       <Dim style={{ marginTop: 10 }}>Diamonds are virtual, for fun only. They have no cash value and cannot be bought, sold or withdrawn.</Dim>
 
@@ -154,6 +180,7 @@ export default function ProfileScreen({ navigation }: any) {
       </PressScale>
       <Dim style={{ textAlign: 'center', marginTop: 12, fontSize: 12 }}>PickArena {appVersion()}</Dim>
       <AccountSheets open={sheet} onClose={() => setSheet(null)} />
+      <LegalSheet slug={legal} onClose={() => setLegal(null)} />
     </Screen>
   );
 }
