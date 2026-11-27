@@ -98,9 +98,6 @@ function PoolCard({ m, pool }: { m: Match; pool?: Participants }) {
                         <Text style={{ color: p.mine ? c.text : c.dim, fontSize: 12, fontWeight: p.mine ? '800' : '500', flex: 1, marginRight: 4 }} numberOfLines={1}>{p.position ? `${p.position}. ` : ''}{p.name}{p.mine ? ' (you)' : ''}</Text>
                         <Text style={{ color: col, fontSize: 12, fontWeight: '700' }}>{pts(Number(p.amount) + Number(p.unmatched_refund ?? 0))}</Text>
                       </Row>
-                      {p.confirmed_at ? <Text style={{ color: c.dim, fontSize: 10.5, marginTop: 1 }}>{new Date(p.confirmed_at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit' })}</Text> : null}
-                      {p.matched_with?.length ? <Text style={{ color: c.dim, fontSize: 10.5, marginTop: 1 }}>vs {p.matched_with.map((x) => `${x.name} ${pts(x.amount)}`).join(', ')}</Text> : null}
-                      {Number(p.unmatched_refund) > 0 ? <Text style={{ color: c.dim, fontSize: 10.5, marginTop: 1 }}>↩️ {pts(p.unmatched_refund)} returned</Text> : null}
                     </View>
                   ))}
                 </ScrollView>
