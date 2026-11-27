@@ -12,6 +12,7 @@ import { ArrowDownIcon, ArrowUpIcon, HistoryIcon } from '../icons';
 import { colors } from '../theme';
 import type { Prediction, Home, Match, Promo } from '../types';
 import { showAlert } from '../dialog';
+import { useClubContext } from '../club';
 
 /** Shown instead of the whole home feed until the player belongs to a club. */
 function JoinFirstClub({ name, onBrowse }: { name: string; onBrowse: () => void }) {
@@ -52,6 +53,7 @@ function JoinFirstClub({ name, onBrowse }: { name: string; onBrowse: () => void 
 export default function HomeScreen({ navigation }: any) {
   const { width } = useWindowDimensions();
   const user = useAuth((s) => s.user);
+  const clubCtx = useClubContext();   // with 2+ clubs, only the one you're in
   const home = useQuery({ queryKey: ['home'], queryFn: () => api.get<Home>('/home'), refetchInterval: POLL_MS });
   const h = home.data;
   const hasClubs = h ? h.has_clubs : false;
@@ -78,14 +80,14 @@ export default function HomeScreen({ navigation }: any) {
     );
   }
 
-  const all = matches.data ?? [];
+  const all = clubCtx.inClub(matches.data ?? []);
   const today = all.filter((m) => m.status === 'open' || m.status === 'paused');   // predictions open (or paused for a moment)
   const live = all.filter((m) => m.status === 'closed');                            // predictions closed, match being played
   const upcoming = all.filter((m) => m.status === 'upcoming');
-  const recent = (results.data?.data ?? []).filter((b) => ['won', 'lost', 'refunded'].includes(b.status)).slice(0, 3);
+  const recent = clubCtx.inClub(results.data?.data ?? []).filter((b) => ['won', 'lost', 'refunded'].includes(b.status)).slice(0, 3);
   const cardW = width - 32;
   const now = Date.now();
-  const upcomingEvents = (h?.events ?? []).slice(0, 3);   // the server sends only events that are on and have announced, open or live matches
+  const upcomingEvents = clubCtx.inClub(h?.events ?? []).slice(0, 3);   // the server sends only events that are on and have announced, open or live matches
   const first = (user?.name ?? '').trim().split(/\s+/)[0] || 'there';
 
   return (
