@@ -93,6 +93,26 @@ function SidePicker({ m, k, selected, canPick, onPick }: { m: Match; k: Side; se
 }
 
 /** How the diamonds are split between the two sides, with the full list of players on demand. */
+/** Player vs player: the diamond difference between the two sides, and whether the club matches it (same as the website). */
+function DiffLine({ m }: { m: Match }) {
+  const d = Number(m.difference ?? 0);
+  if (m.mode !== 'peer' || (!d && !m.covers_difference)) return null;
+  const done = m.status === 'closed' || m.status === 'settled';
+  const bigger = Number(m.open_a ?? 0) > Number(m.open_b ?? 0) ? m.side_a : m.side_b;
+  const club = !!m.covers_difference;
+  const note = club ? (done ? 'Matched by the club' : 'The club matches it when predictions close')
+    : (done ? 'Unmatched diamonds were returned' : 'Not matched yet: returned when predictions close unless someone matches it');
+  return (
+    <View style={{ marginTop: 12, borderWidth: 1, borderColor: club ? colors.success + '55' : colors.line, backgroundColor: club ? colors.success + '12' : colors.bg2, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 }}>
+      <Row style={{ justifyContent: 'space-between' }}>
+        <Text style={{ color: colors.text, fontWeight: '700' }}>Difference</Text>
+        <Text style={{ color: colors.text, fontWeight: '800' }}>{pts(d)} 💎{!done && d ? <Text style={{ color: colors.dim, fontWeight: '600', fontSize: 12.5 }}> more on {bigger}</Text> : null}</Text>
+      </Row>
+      <Text style={{ color: club ? colors.success : colors.dim, fontWeight: club ? '700' : '500', fontSize: 12.5, marginTop: 2 }}>{club ? '✓ ' : ''}{note}</Text>
+    </View>
+  );
+}
+
 function PoolCard({ m, pool }: { m: Match; pool?: Participants }) {
   const [open, setOpen] = useState(true);   // the players list starts open
   const a = Number(pool?.total_a ?? 0), b = Number(pool?.total_b ?? 0), sum = a + b;
@@ -134,6 +154,7 @@ function PoolCard({ m, pool }: { m: Match; pool?: Participants }) {
         style={{ flexDirection: 'row', marginTop: 12, height: 12, borderRadius: 6, overflow: 'hidden', backgroundColor: colors.elevated }}>
         {sum ? (<><View style={{ width: `${pa}%`, height: '100%', backgroundColor: c.a }} /><View style={{ flex: 1, height: '100%', backgroundColor: c.b }} /></>) : null}
       </View>
+      <DiffLine m={m} />
       {pool && !count ? <Dim style={{ marginTop: 10 }}>No predictions yet. Be the first!</Dim> : null}
       {open && count ? <Dim style={{ fontSize: 11.5, marginTop: 12 }}>In order of who predicted first. The first player on each side is matched first.</Dim> : null}
       {open && count ? (
