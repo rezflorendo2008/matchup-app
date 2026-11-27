@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ScrollView } from 'react-native';
+import { Linking, Pressable, ScrollView } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../api';
 import { POLL_MS } from '../config';
@@ -10,6 +10,11 @@ import { colors, radius } from '../theme';
 import type { Club, Tx } from '../types';
 import { useClubContext } from '../club';
 import { RequestDiamondsSheet } from '../components/RequestDiamondsSheet';
+
+/** The club's invoices to this player for diamonds added on credit (to be paid). */
+type CreditInvoice = { id: number; number: string; amount: number; status: 'issued' | 'paid'; due_at: string | null; paid_at: string | null; note: string | null; url: string;
+  items: { amount: number; note: string | null; created_at: string }[] };
+const CI: Record<string, [string, string]> = { issued: ['To pay', colors.amber], paid: ['Paid', colors.success] };
 
 const LABEL: Record<string, string> = {
   grant: 'Diamonds added', deposit: 'Diamonds added', referral: 'Referral bonus 🎁', claim: 'Diamonds claimed',
@@ -57,6 +62,9 @@ export default function DiamondsScreen({ navigation, route }: any) {
   const types = FILTERS.find((f) => f.key === filter)?.types;
   const rows = (tx.data?.data ?? []).filter((t) => !types || types.includes(t.type));
   const waiting = (reqs.data ?? []).filter((r) => r.status === 'pending');
+  const invs = useQuery({ enabled: !!club, queryKey: ['tx', club?.id, 'credit-invoices'], refetchInterval: POLL_MS, queryFn: () => api.get<CreditInvoice[]>(`/clubs/${club!.id}/credit-invoices`) });
+  const [openInv, setOpenInv] = useState<number | null>(null);
+  const owe = (invs.data ?? []).filter((i) => i.status === 'issued').reduce((a, i) => a + Number(i.amount), 0);
   // one compact list per day
   const days: { day: string; items: Tx[] }[] = [];
   for (const t of rows.slice(0, limit)) {
@@ -102,6 +110,46 @@ export default function DiamondsScreen({ navigation, route }: any) {
                       <View style={{ borderWidth: 1, borderColor: colors.amber + '66', borderRadius: 999, paddingHorizontal: 9, paddingVertical: 4 }}><Text style={{ color: colors.amber, fontWeight: '800', fontSize: 11.5 }}>Waiting</Text></View>
                     </Row>
                   ))}
+                </Card>
+              </>
+            ) : null}
+
+            {(invs.data ?? []).length ? (
+              <>
+                <SectionHeader title="Credit invoices" />
+                {owe ? <Dim style={{ marginBottom: 8 }}>You owe {club.name} {pts(owe)} 💎 for diamonds added on credit.</Dim> : null}
+                <Card style={{ paddingVertical: 2 }}>
+                  {(invs.data ?? []).slice(0, 10).map((i, n) => {
+                    const [label, col] = CI[i.status] ?? [i.status, colors.dim];
+                    const open = openInv === i.id;
+                    return (
+                      <View key={i.id} style={{ borderTopWidth: n ? 1 : 0, borderTopColor: colors.line }}>
+                        <Pressable onPress={() => setOpenInv(open ? null : i.id)} accessibilityRole="button" accessibilityState={{ expanded: open }}
+                          style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 }}>
+                          <View style={{ width: 38, height: 38, borderRadius: radius.md, backgroundColor: col + '1F', alignItems: 'center', justifyContent: 'center' }}><HistoryIcon size={18} color={col} /></View>
+                          <View style={{ flex: 1 }}>
+                            <T style={{ fontWeight: '700' }}>{i.number} · {pts(i.amount)} 💎</T>
+                            <Dim style={{ fontSize: 12.5 }}>{i.status === 'paid' ? `Paid ${when(i.paid_at ?? '')}` : `Pay by ${i.due_at ? new Date(i.due_at).toLocaleDateString([], { month: 'short', day: 'numeric' }) : '—'}`}</Dim>
+                          </View>
+                          <View style={{ borderWidth: 1, borderColor: col + '66', borderRadius: 999, paddingHorizontal: 9, paddingVertical: 4 }}><Text style={{ color: col, fontWeight: '800', fontSize: 11.5 }}>{label}</Text></View>
+                        </Pressable>
+                        {open ? (
+                          <View style={{ paddingLeft: 50, paddingBottom: 12 }}>
+                            {i.items.map((g, k) => (
+                              <Row key={k} style={{ justifyContent: 'space-between', paddingVertical: 3 }}>
+                                <Dim style={{ fontSize: 13, flex: 1, marginRight: 8 }} numberOfLines={1}>{when(g.created_at)}{g.note ? ` · ${g.note}` : ''}</Dim>
+                                <T style={{ fontWeight: '700', fontSize: 13 }}>{pts(g.amount)} 💎</T>
+                              </Row>
+                            ))}
+                            {i.note ? <Dim style={{ fontSize: 13, marginTop: 4 }}>Note: {i.note}</Dim> : null}
+                            <Pressable onPress={() => Linking.openURL(i.url).catch(() => {})} hitSlop={6} style={{ marginTop: 6 }}>
+                              <Text style={{ color: colors.primarySoft, fontWeight: '800' }}>Open invoice (print / PDF) ↗</Text>
+                            </Pressable>
+                          </View>
+                        ) : null}
+                      </View>
+                    );
+                  })}
                 </Card>
               </>
             ) : null}
