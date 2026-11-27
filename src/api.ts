@@ -4,8 +4,12 @@ import { useMaint } from './maintenance';
 
 export class ApiError extends Error {
   status: number;
-  constructor(message: string, status: number) { super(message); this.status = status; }
+  /** { email: 'An account with this email already exists…', … } when the server says which box is wrong */
+  fields: Record<string, string>;
+  constructor(message: string, status: number, fields: Record<string, string> = {}) { super(message); this.status = status; this.fields = fields; }
 }
+/** Field errors from a failed request ({} when none). */
+export const fieldErrors = (e: unknown): Record<string, string> => (e instanceof ApiError ? e.fields : {});
 
 async function request<T>(method: string, path: string, body?: any, isForm = false): Promise<T> {
   if (!SECURE_TRANSPORT) throw new ApiError('This build is not configured for a secure connection. Please update the app.', 0);   // never send a login over plain http
@@ -36,7 +40,9 @@ async function request<T>(method: string, path: string, body?: any, isForm = fal
     if (res.status === 429) msg = data?.message || 'Too many attempts. Please wait a moment and try again.';
     const accountBlocked = res.status === 403 && /^Your account is/i.test(msg);
     if ((res.status === 401 && token) || accountBlocked) useAuth.getState().signOut();
-    throw new ApiError(msg, res.status);
+    const fields: Record<string, string> = {};
+    for (const [k, v] of Object.entries(data?.errors ?? {})) fields[k] = Array.isArray(v) ? String(v[0]) : String(v);
+    throw new ApiError(msg, res.status, fields);
   }
   return data as T;
 }

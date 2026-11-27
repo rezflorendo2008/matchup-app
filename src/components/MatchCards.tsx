@@ -70,8 +70,8 @@ export function LiveMatchCard({ m, onOpen }: { m: Match; onOpen: OpenMatch }) {
       </Row>
       <MyPredicted m={m} style={{ marginTop: 5, fontSize: 11, textAlign: 'center' }} />
       <PressScale onPress={() => onOpen(m)} accessibilityLabel={m.status === 'open' ? 'View match and predict' : 'View match'}
-        style={{ marginTop: 5, backgroundColor: colors.primary, borderRadius: radius.pill, minHeight: 28, alignItems: 'center', justifyContent: 'center' }}>
-        <Text style={{ color: colors.white, fontWeight: '800', fontSize: 12 }}>{m.status === 'open' ? 'View match & predict' : 'View match'}</Text>
+        style={{ marginTop: 8, backgroundColor: colors.primary, borderRadius: radius.md, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
+        <Text style={{ color: colors.white, fontWeight: '800', fontSize: 15 }}>{m.status === 'open' ? 'View match & predict' : 'View match'}</Text>
       </PressScale>
     </View>
   );

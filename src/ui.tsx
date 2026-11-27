@@ -91,11 +91,11 @@ export function AppHeader() {
 
 /** Display names are short like usernames (24 characters, letters, numbers, spaces and . _ - '); shows a live counter. */
 export const NAME_MAX = 24;
-export function NameField({ label = 'Display name', value, onChangeText, ...p }: TextInputProps & { label?: string; value: string; onChangeText: (v: string) => void }) {
+export function NameField({ label = 'Display name', value, onChangeText, error, ...p }: TextInputProps & { label?: string; value: string; onChangeText: (v: string) => void; error?: string | null }) {
   const n = value.trim().length;
   return (
     <View style={{ marginBottom: spacing.md }}>
-      <Field label={label} value={value} onChangeText={onChangeText} maxLength={NAME_MAX} autoCapitalize="words" autoCorrect={false} {...p} style={[p.style as any, { marginBottom: 0 }]} />
+      <Field label={label} value={value} onChangeText={onChangeText} maxLength={NAME_MAX} autoCapitalize="words" autoCorrect={false} {...p} error={error} style={[p.style as any, { marginBottom: 0 }]} />
       <Text style={{ color: n > 0 && n < 2 ? colors.danger : colors.dim, fontSize: 11.5, marginTop: -6 }}>{n}/{NAME_MAX} · letters, numbers, spaces and . _ - '</Text>
     </View>
   );
@@ -193,20 +193,49 @@ export function Button({ title, onPress, kind = 'primary', loading, disabled, st
   const bg = kind === 'primary' ? colors.primary : kind === 'danger' ? colors.danger : 'transparent';
   return (
     <PressScale onPress={onPress} disabled={disabled || loading} scaleTo={0.98}
-      style={[s.btn, small && { paddingVertical: 9 }, { backgroundColor: bg, borderColor: kind === 'ghost' ? colors.line : bg, opacity: disabled ? 0.45 : 1 }, style]}>
-      {loading ? <ActivityIndicator color="#fff" /> : <Text style={[s.btnText, small && { fontSize: font.size.sm }, kind === 'ghost' && { color: colors.text }]}>{title}</Text>}
+      style={[s.btn, small && { paddingVertical: 10, minHeight: 42 }, { backgroundColor: bg, borderColor: kind === 'ghost' ? colors.line : bg, opacity: disabled ? 0.45 : 1 }, style]}>
+      {loading ? <ActivityIndicator color="#fff" /> : <Text style={[s.btnText, small && { fontSize: 15 }, kind === 'ghost' && { color: colors.text }]}>{title}</Text>}
     </PressScale>
   );
 }
 
-export function Field({ label, ...p }: TextInputProps & { label?: string }) {
+/** Red ! icon and message under a text box. */
+export function FieldError({ text }: { text?: string | null }) {
+  if (!text) return null;
+  return (
+    <View accessibilityRole="alert" accessibilityLiveRegion="polite" style={{ flexDirection: 'row', alignItems: 'flex-start', marginTop: 6 }}>
+      <View style={{ width: 17, height: 17, borderRadius: 9, backgroundColor: colors.danger, alignItems: 'center', justifyContent: 'center', marginRight: 7, marginTop: 1 }}>
+        <Text style={{ color: '#fff', fontSize: 11, fontWeight: '900' }}>!</Text>
+      </View>
+      <Text style={{ flex: 1, color: '#FCA5A5', fontSize: 13, fontWeight: '600', lineHeight: 18 }}>{text}</Text>
+    </View>
+  );
+}
+
+/** Message box inside a form or page: error · warning · info · success, with an icon. */
+export function Notice({ tone = 'info', children, style }: { tone?: 'error' | 'warning' | 'info' | 'success'; children: React.ReactNode; style?: ViewStyle }) {
+  const col = tone === 'error' ? colors.danger : tone === 'warning' ? '#F59E0B' : tone === 'success' ? colors.success : colors.primary;
+  const ic = tone === 'success' ? '✓' : tone === 'info' ? 'i' : '!';
+  return (
+    <View accessibilityRole={tone === 'error' ? 'alert' : undefined} style={[{ flexDirection: 'row', alignItems: 'flex-start', padding: 12, borderRadius: 14, borderWidth: 1, borderColor: col + '66', backgroundColor: col + '14', marginTop: 12 }, style]}>
+      <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: col, alignItems: 'center', justifyContent: 'center', marginRight: 10, marginTop: 1 }}>
+        <Text style={{ color: '#fff', fontSize: 12, fontWeight: '900' }}>{ic}</Text>
+      </View>
+      <View style={{ flex: 1 }}>{typeof children === 'string' ? <Text style={{ color: colors.text, fontSize: 14, lineHeight: 20 }}>{children}</Text> : children}</View>
+    </View>
+  );
+}
+
+/** Text box with a label; `error` turns it red with the message under it. */
+export function Field({ label, error, ...p }: TextInputProps & { label?: string; error?: string | null }) {
   const secure = !!p.secureTextEntry;
   const [shown, setShown] = useState(false);
   return (
     <View style={{ marginBottom: spacing.md }}>
-      {label ? <Text style={s.label}>{label}</Text> : null}
+      {label ? <Text style={[s.label, error ? { color: colors.danger } : null]}>{label}</Text> : null}
       <View>
-        <TextInput placeholderTextColor={colors.dim} autoCapitalize="none" {...p} secureTextEntry={secure && !shown} style={[s.input, p.style, secure ? { paddingRight: 64 } : null]} />
+        <TextInput placeholderTextColor={colors.dim} autoCapitalize="none" {...p} secureTextEntry={secure && !shown}
+          style={[s.input, p.style, secure ? { paddingRight: 64 } : null, error ? { borderColor: colors.danger, backgroundColor: colors.danger + '0F' } : null]} />
         {secure ? (
           <Pressable onPress={() => setShown(!shown)} hitSlop={10} accessibilityRole="button" accessibilityLabel={shown ? 'Hide password' : 'Show password'}
             style={{ position: 'absolute', right: 0, top: 0, bottom: 0, paddingHorizontal: 14, justifyContent: 'center' }}>
@@ -214,6 +243,7 @@ export function Field({ label, ...p }: TextInputProps & { label?: string }) {
           </Pressable>
         ) : null}
       </View>
+      <FieldError text={error} />
     </View>
   );
 }

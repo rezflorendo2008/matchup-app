@@ -17,15 +17,16 @@ export default function ClubsScreen({ route, navigation }: any) {
 
   const refresh = () => ['clubs', 'matches', 'home', 'wallets'].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
 
+  const [codeErr, setCodeErr] = useState<string | null>(null);   // shown under the Club ID box
   const search = useMutation({
     mutationFn: (id: string) => api.get<Club>(`/clubs/search?club_id=${encodeURIComponent(id.trim())}`),
     onSuccess: setFound,
-    onError: (e) => { setFound(null); showAlert('Not found', errMsg(e)); },
+    onError: (e) => { setFound(null); setCodeErr(errMsg(e)); },
   });
   const join = useMutation({
     mutationFn: (body: { club_id?: string; slug?: string; ref?: string }) => api.post<Club>('/clubs/join', body),
     onSuccess: (c) => { setFound(c); refresh(); showAlert('Request sent', c.membership === 'approved' ? 'You are already verified in this club.' : 'The club owner must verify you before you can make predictions.'); },
-    onError: (e) => showAlert('Could not join', errMsg(e)),
+    onError: (e) => setCodeErr(errMsg(e)),
   });
 
   // opened from an owner's sign-up link (pickarena://join/<slug>)
@@ -47,7 +48,7 @@ export default function ClubsScreen({ route, navigation }: any) {
   const joinCard = (
       <Card>
         <Row style={{ marginBottom: 10 }}><SearchIcon /><T style={{ fontWeight: '800', marginLeft: 8 }}>Join with a club ID</T></Row>
-        <Field label="Club ID" value={code} onChangeText={setCode} autoCapitalize="characters" placeholder="Ask the club owner" />
+        <Field label="Club ID" value={code} onChangeText={(v) => { setCode(v); setCodeErr(null); }} autoCapitalize="characters" placeholder="Ask the club owner" error={codeErr} />
         <Field label="Referral code (optional)" value={ref} onChangeText={(v) => setRef(v.toUpperCase())} autoCapitalize="characters" autoCorrect={false} placeholder="From a friend" />
         <Button title="Find club" kind="ghost" onPress={() => search.mutate(code)} loading={search.isPending} disabled={code.trim().length < 3} />
         {found ? (

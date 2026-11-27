@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Text, View } from 'react-native';
-import { Button, Card, Dim, Field, Logo, NameField, PressScale, Screen, T, c } from '../ui';
+import { Button, Card, Dim, Field, Logo, NameField, Notice, PressScale, Screen, T, c } from '../ui';
 import { SocialButtons } from '../components/SocialButtons';
 import { PhoneField } from '../components/PhoneField';
 import { Country, detectCountry, toE164 } from '../countries';
-import { api, errMsg } from '../api';
+import { api, errMsg, fieldErrors } from '../api';
 import { BASE } from '../config';
 import { useAuth } from '../store';
 import { readPending } from '../pending';
@@ -36,6 +36,9 @@ export default function LoginScreen() {
   const [name, setName] = useState('');
   const [needName, setNeedName] = useState(false);
   const [info, setInfo] = useState<string | null>(null);
+  const [fe, setFe] = useState<Record<string, string>>({});   // server errors for one box, shown under it
+  const [errTone, setErrTone] = useState<'error' | 'warning'>('error');
+  const clearFe = (k: string) => setFe((f) => (f[k] ? { ...f, [k]: '' } : f));
   const [refCode, setRefCode] = useState('');
   const [invited, setInvited] = useState(false);
 
@@ -61,13 +64,14 @@ export default function LoginScreen() {
   }, []);
 
   const run = async (fn: () => Promise<void>) => {
-    setErr(null); setBusy(true);
+    setErr(null); setFe({}); setBusy(true);
     try { await fn(); } catch (e) {
       const msg = errMsg(e);
-      if (msg === NAME_MSG) { setNeedName(true); setErr(null); } else setErr(msg);   // new account: one more step, not an error
+      if (msg === NAME_MSG) { setNeedName(true); setErr(null); }   // new account: one more step, not an error
+      else { setFe(fieldErrors(e)); setErr(msg); setErrTone((e as any)?.status === 429 ? 'warning' : 'error'); }
     } finally { setBusy(false); }
   };
-  const back = (m: Mode) => { setMode(m); setErr(null); setInfo(null); setSent(false); setCode(''); setDev(null); setNeedName(false); };
+  const back = (m: Mode) => { setMode(m); setErr(null); setFe({}); setInfo(null); setSent(false); setCode(''); setDev(null); setNeedName(false); };
   // what the server checks for a new password: 8+ characters, a letter and a number
   const pwRules: [boolean, string][] = [[password.length >= 8, '8+ characters'], [/[A-Za-z]/.test(password), 'a letter'], [/\d/.test(password), 'a number']];
   const pwOk = pwRules.every((r) => r[0]);
@@ -107,14 +111,14 @@ export default function LoginScreen() {
           <Dim style={{ marginTop: 6, fontSize: 15 }}>{sub}</Dim>
         </View>
 
-        {invited ? <Card style={{ borderColor: c.good, marginBottom: 14 }}><T style={{ fontWeight: '700' }}>You were invited to a club 🎉</T><Dim style={{ marginTop: 2 }}>Sign in or create your account and we will send your join request.{refCode ? ` Referral code ${refCode} applied.` : ''}</Dim></Card> : null}
+        {invited ? <Notice tone="success" style={{ marginTop: 0, marginBottom: 14 }}><T style={{ fontWeight: '700' }}>You were invited to a club 🎉</T><Dim style={{ marginTop: 2 }}>Sign in or create your account and we will send your join request.{refCode ? ` Referral code ${refCode} applied.` : ''}</Dim></Notice> : null}
 
         {mode === 'password' ? (
           <>
-            {register ? <NameField value={name} onChangeText={setName} /> : null}
+            {register ? <NameField value={name} onChangeText={(v) => { setName(v); clearFe('name'); }} error={fe.name} /> : null}
             {register ? <Field label="Referral code (optional)" value={refCode} onChangeText={(v) => setRefCode(v.toUpperCase())} autoCapitalize="characters" autoCorrect={false} placeholder="From a friend" /> : null}
-            <Field label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoComplete="email" autoCapitalize="none" />
-            <Field label={register ? 'Password (at least 8 characters)' : 'Password'} value={password} onChangeText={setPassword} secureTextEntry autoComplete={register ? 'new-password' : 'current-password'} />
+            <Field label="Email" value={email} onChangeText={(v) => { setEmail(v); clearFe('email'); }} keyboardType="email-address" autoComplete="email" autoCapitalize="none" error={fe.email} />
+            <Field label={register ? 'Password (at least 8 characters)' : 'Password'} value={password} onChangeText={(v) => { setPassword(v); clearFe('password'); }} error={fe.password} secureTextEntry autoComplete={register ? 'new-password' : 'current-password'} />
             {register ? <Dim style={{ marginTop: -4, marginBottom: 12, color: pwOk ? c.good : c.dim }}>{pwOk ? '✓ Good password' : pwRules.map(([ok, label]) => (ok ? '✓ ' : '') + label).join(' · ')}</Dim> : null}
             <Button title={register ? 'Create account' : 'Log in'} onPress={passwordGo} loading={busy}
               disabled={!email.includes('@') || (register ? !pwOk : password.length < 1) || (register && name.trim().length < 2)} />
@@ -125,16 +129,16 @@ export default function LoginScreen() {
         ) : !sent ? (
           <>
             {mode === 'phone'
-              ? <PhoneField label="Mobile number" country={country} onCountry={setCountry} national={national} onNational={setNational} />
-              : <Field label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoComplete="email" autoCapitalize="none" autoFocus />}
+              ? <PhoneField label="Mobile number" country={country} onCountry={setCountry} national={national} onNational={(v) => { setNational(v); clearFe('phone'); }} error={fe.phone} />
+              : <Field label="Email" value={email} onChangeText={(v) => { setEmail(v); clearFe('email'); }} keyboardType="email-address" autoComplete="email" autoCapitalize="none" autoFocus error={fe.email} />}
             <Button title="Continue" onPress={sendCode} loading={busy}
               disabled={mode === 'phone' ? national.replace(/\D/g, '').length < 6 : !email.includes('@')} />
           </>
         ) : (
           <>
-            {dev ? <Card style={{ borderColor: c.warn }}><T>Test mode: your code is <T style={{ fontWeight: '800' }}>{dev}</T></T></Card> : null}
-            <Field label="6-digit code" value={code} onChangeText={setCode} keyboardType="number-pad" maxLength={6} autoComplete="one-time-code" autoFocus={!needName} />
-            {needName ? <NameField value={name} onChangeText={setName} placeholder="How friends will see you" autoFocus /> : null}
+            {dev ? <Notice tone="warning" style={{ marginTop: 0, marginBottom: 12 }}><T>Test mode: your code is <T style={{ fontWeight: '800' }}>{dev}</T></T></Notice> : null}
+            <Field label="6-digit code" value={code} onChangeText={(v) => { setCode(v); clearFe('code'); }} keyboardType="number-pad" maxLength={6} autoComplete="one-time-code" autoFocus={!needName} error={fe.code} />
+            {needName ? <NameField value={name} onChangeText={(v) => { setName(v); clearFe('name'); }} placeholder="How friends will see you" autoFocus error={fe.name} /> : null}
             {needName ? <Field label="Referral code (optional)" value={refCode} onChangeText={(v) => setRefCode(v.toUpperCase())} autoCapitalize="characters" autoCorrect={false} placeholder="From a friend" /> : null}
             <Button title="Verify & continue" onPress={verify} loading={busy} disabled={code.trim().length !== 6 || (needName && name.trim().length < 2)} />
             <TextLink label="Send a new code" onPress={sendCode} />
@@ -142,8 +146,8 @@ export default function LoginScreen() {
           </>
         )}
 
-        {info && mode === 'email' && !sent ? <Card style={{ borderColor: colors.primary, marginTop: 14 }}><T>{info}</T></Card> : null}
-        {err ? <Card style={{ borderColor: c.bad, marginTop: 14 }}><T style={{ color: c.bad }}>{err}</T></Card> : null}
+        {info && mode === 'email' && !sent ? <Notice tone="info">{info}</Notice> : null}
+        {err && !['email', 'password', 'name', 'code', 'phone'].some((k) => fe[k]) ? <Notice tone={errTone}>{err}</Notice> : null}
 
         {mode !== 'password' && !sent ? (
           <>

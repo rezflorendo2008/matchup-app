@@ -18,10 +18,11 @@ function JoinFirstClub({ name, onBrowse }: { name: string; onBrowse: () => void 
   const qc = useQueryClient();
   const [code, setCode] = useState('');
   const [ref, setRef] = useState('');
+  const [codeErr, setCodeErr] = useState<string | null>(null);   // shown under the Club ID box
   const join = useMutation({
     mutationFn: (v: string) => api.post('/clubs/join', { club_id: v, ref: ref.trim() || undefined }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['home'] }); qc.invalidateQueries({ queryKey: ['clubs'] }); showAlert('Request sent', 'The club owner will verify you soon.'); setCode(''); },
-    onError: (e) => showAlert('Could not join', errMsg(e)),
+    onError: (e) => setCodeErr(errMsg(e)),
   });
   const first = (name || '').trim().split(/\s+/)[0] || 'there';
   const steps = ['Ask your club owner for the club ID', 'Enter it below and send the request', 'Once approved, matches appear here'];
@@ -38,7 +39,7 @@ function JoinFirstClub({ name, onBrowse }: { name: string; onBrowse: () => void 
             <T style={{ flex: 1, fontSize: 15 }}>{s}</T>
           </Row>
         ))}
-        <Field label="Club ID" value={code} onChangeText={setCode} autoCapitalize="characters" autoCorrect={false} placeholder="e.g. AB12CD" />
+        <Field label="Club ID" value={code} onChangeText={(v) => { setCode(v); setCodeErr(null); }} autoCapitalize="characters" autoCorrect={false} placeholder="8-digit number from your club owner" keyboardType="number-pad" error={codeErr} />
         <Field label="Referral code (optional)" value={ref} onChangeText={(v) => setRef(v.toUpperCase())} autoCapitalize="characters" autoCorrect={false} placeholder="From a friend" />
         <Button title="Request to join" onPress={() => join.mutate(code.trim())} loading={join.isPending} disabled={code.trim().length < 3} />
       </Card>
