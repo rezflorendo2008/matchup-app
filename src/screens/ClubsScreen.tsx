@@ -88,6 +88,7 @@ export default function ClubsScreen({ route, navigation }: any) {
                     ? <Row><DiamondIcon size={16} color={colors.primarySoft} /><Text style={{ color: colors.text, fontWeight: '800', fontSize: 15, marginLeft: 6 }}>{pts(cl.balance)}</Text><Dim style={{ marginLeft: 5 }}>diamonds</Dim></Row>
                     : <Dim style={{ flex: 1 }}>Waiting for the club owner to verify you</Dim>}
                   {cl.membership && cl.membership !== 'approved' ? <Badge text={cl.membership} /> : null}
+                  {cl.suspended ? <Badge text="suspended" /> : null}
                   {cl.status !== 'active' ? <Badge text={cl.status} /> : null}
                   {here ? (
                     <View style={{ backgroundColor: colors.success + '22', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 }}>

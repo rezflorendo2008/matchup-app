@@ -32,6 +32,8 @@ export interface Prediction {
 export interface Club {
   id: number; name: string; club_code: string; logo: string | null; banner?: string | null; id_required?: boolean; referral?: { text: string } | null; club_pays: boolean; commission_pct: number; status: string;
   membership: string | null; balance: number | null;
+  /** suspended by the club: still a member, but can't predict, request diamonds or earn from referrals */
+  suspended?: boolean; suspend_reason?: string | null;
 }
 export interface ClubProfile extends Club {
   tagline: string | null; can_predict: boolean;

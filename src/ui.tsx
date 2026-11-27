@@ -282,7 +282,7 @@ export function Chip({ label, active, onPress, disabled, style }: { label: strin
 const tone: Record<string, string> = {
   open: colors.success, won: colors.success, approved: colors.success, verified: colors.success, active: colors.success, confirmed: colors.primary, upcoming: colors.primary,
   paused: colors.amber, pending: colors.amber, pending_confirm: colors.amber, closed: colors.dim, settled: colors.dim,
-  lost: colors.danger, rejected: colors.danger, blocked: colors.danger, refunded: colors.dim, cancelled: colors.dim,
+  lost: colors.danger, rejected: colors.danger, blocked: colors.danger, suspended: colors.danger, refunded: colors.dim, cancelled: colors.dim,
 };
 export function Badge({ text }: { text: string }) {
   const col = tone[text] ?? colors.dim;

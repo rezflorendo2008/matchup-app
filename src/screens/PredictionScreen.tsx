@@ -13,6 +13,7 @@ import { colors, radius, spacing } from '../theme';
 import type { Prediction, Club, Match } from '../types';
 import { showAlert } from '../dialog';
 import { RequestDiamondsSheet } from '../components/RequestDiamondsSheet';
+import { SuspendedNotice } from '../components/SuspendedNotice';
 
 type Side = 'a' | 'b';
 type Participants = { total: number; total_a: number; total_b: number; count: number; players: number;
@@ -173,11 +174,12 @@ export default function PredictionScreen({ route, navigation }: any) {
   const pq = useQuery({ queryKey: ['match-participants', id], queryFn: () => api.get<Participants>(`/matches/${id}/participants`), refetchInterval: POLL_MS });
 
   const m = mq.data;
-  const balance = Number(clubs.data?.find((x) => x.id === m?.club_id)?.balance ?? 0);
+  const myClub = clubs.data?.find((x) => x.id === m?.club_id);
+  const balance = Number(myClub?.balance ?? 0);
   const mine = (predictions.data?.data ?? []).filter((b) => b.match_id === id && ['confirmed', 'won', 'lost', 'refunded'].includes(b.status));
   const open = !!m?.predictions_open;
   // owners and match agents decide results, so they don't predict on their club's matches
-  const canPredict = !!user?.can_predict && open && !m?.can_manage;
+  const canPredict = !!user?.can_predict && open && !m?.can_manage && !myClub?.suspended;   // suspended by the club: can look, not predict
   const amt = Number(amount);
   const max = m?.max_diamonds ? Number(m.max_diamonds) : null;
   const overMax = max != null && amt > max;
@@ -280,7 +282,8 @@ export default function PredictionScreen({ route, navigation }: any) {
       })() : null}
 
       {/* Why the player can't predict right now */}
-      {!user?.can_predict && open && !m.can_manage ? (
+      {myClub?.suspended && open && !m.can_manage ? <SuspendedNotice club={myClub} style={{ marginTop: 14 }} />
+      : !user?.can_predict && open && !m.can_manage ? (
         <Card style={{ marginTop: 14, borderColor: c.warn }}>
           <T style={{ fontWeight: '800' }}>Verify your account to predict</T>
           <Dim style={{ marginTop: 2 }}>Confirm your email and ID. Takes about 2 minutes.</Dim>

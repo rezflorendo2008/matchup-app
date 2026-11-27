@@ -5,6 +5,7 @@ import { api, errMsg } from '../api';
 import { Button, ClubAvatar, Dim, Field, FieldError, pts } from '../ui';
 import { colors, radius } from '../theme';
 import { useClubContext } from '../club';
+import { SuspendedNotice } from './SuspendedNotice';
 
 const QUICK = [100, 250, 500, 1000];
 const MAX_PENDING = 3;
@@ -63,7 +64,14 @@ export function RequestDiamondsSheet({ clubId, onClose, onSent }: { clubId?: num
         <View style={{ maxHeight: '92%', backgroundColor: colors.card, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, borderWidth: 1, borderColor: colors.line }}>
           <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 20, paddingBottom: 34 }}>
             <View style={{ alignSelf: 'center', width: 40, height: 4, borderRadius: 2, backgroundColor: colors.line, marginBottom: 14 }} />
-            {sent != null && sel ? (
+            {fixed?.suspended ? (
+              // suspended in this club: explain instead of the form
+              <>
+                <Text style={{ color: colors.text, fontSize: 21, fontWeight: '800', marginBottom: 12 }}>Request diamonds</Text>
+                <SuspendedNotice club={fixed} />
+                <Button title="OK" style={{ marginTop: 14 }} onPress={onClose} />
+              </>
+            ) : sent != null && sel ? (
               // done: same sheet, success state
               <View style={{ alignItems: 'center', paddingTop: 6 }}>
                 <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: colors.success + '26', alignItems: 'center', justifyContent: 'center' }}>
@@ -90,6 +98,17 @@ export function RequestDiamondsSheet({ clubId, onClose, onSent }: { clubId?: num
                     <View accessibilityRole="radiogroup" style={{ gap: 8 }}>
                       {approved.map((cl) => {
                         const on = cl.id === selId;
+                        if (cl.suspended) return (
+                          // suspended there: shown, but can't be picked
+                          <View key={cl.id} accessibilityState={{ disabled: true }} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 58, paddingHorizontal: 12, paddingVertical: 10, borderRadius: radius.md, borderWidth: 1.5, borderColor: colors.line, backgroundColor: colors.bg2, opacity: 0.6 }}>
+                            <View style={{ width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: colors.dim }} />
+                            <ClubAvatar name={cl.name} logo={cl.logo} size={32} />
+                            <View style={{ flex: 1 }}>
+                              <Text style={{ color: colors.text, fontWeight: '800', fontSize: 15 }} numberOfLines={1}>{cl.name}</Text>
+                              <Text style={{ color: colors.danger, fontWeight: '700', fontSize: 12 }}>Suspended · can't request here</Text>
+                            </View>
+                          </View>
+                        );
                         return (
                           <Pressable key={cl.id} accessibilityRole="radio" accessibilityState={{ checked: on }} accessibilityLabel={`${cl.name}, ${pts(cl.balance)} diamonds now`}
                             onPress={() => { setSelId(cl.id); setClubErr(null); }}
