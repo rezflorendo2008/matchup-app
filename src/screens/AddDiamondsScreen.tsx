@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Alert, ScrollView } from 'react-native';
+import { ScrollView } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, errMsg } from '../api';
 import { Badge, Button, Card, Chip, Dim, ErrorBox, Field, H2, Loading, Row, Screen, T, pts, when } from '../ui';
 import type { Club } from '../types';
+import { showAlert } from '../dialog';
 
 export default function AddDiamondsScreen({ navigation }: any) {
   const qc = useQueryClient();
@@ -16,8 +17,8 @@ export default function AddDiamondsScreen({ navigation }: any) {
   const reqs = useQuery({ enabled: !!club, queryKey: ['tx', club?.id, 'requests'], queryFn: () => api.get<{ id: number; amount: number; status: string; created_at: string }[]>(`/clubs/${club!.id}/requests`) });
   const request = useMutation({
     mutationFn: () => api.post(`/clubs/${club!.id}/diamonds/request`, { amount: Number(amount) }),
-    onSuccess: () => { setAmount(''); qc.invalidateQueries({ queryKey: ['tx'] }); Alert.alert('Request sent', 'Your club owner will see it. Diamonds appear in your balance when the owner adds them.'); },
-    onError: (e) => Alert.alert('Could not send request', errMsg(e)),
+    onSuccess: () => { setAmount(''); qc.invalidateQueries({ queryKey: ['tx'] }); showAlert('Request sent', 'Your club owner will see it. Diamonds appear in your balance when the owner adds them.'); },
+    onError: (e) => showAlert('Could not send request', errMsg(e)),
   });
   const n = Number(amount);
 

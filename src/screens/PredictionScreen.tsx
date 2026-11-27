@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, errMsg } from '../api';
 import { POLL_MS } from '../config';
@@ -11,6 +11,7 @@ import { ClubControls } from '../components/ClubControls';
 import { CheckIcon, ChevronDownIcon, ChevronRightIcon } from '../icons';
 import { colors, radius, spacing } from '../theme';
 import type { Prediction, Club, Match } from '../types';
+import { showAlert } from '../dialog';
 
 type Side = 'a' | 'b';
 type Participants = { total: number; total_a: number; total_b: number; count: number; players: number;
@@ -144,21 +145,21 @@ export default function PredictionScreen({ route, navigation }: any) {
   const place = useMutation({
     mutationFn: () => editing ? api.put<Prediction>(`/predictions/${editing.id}`, { side, amount: amt }) : api.post<Prediction>('/predictions', { match_id: id, side, amount: amt }),
     onSuccess: (b) => setPending(b),
-    onError: (e) => Alert.alert('Could not save prediction', errMsg(e)),
+    onError: (e) => showAlert('Could not save prediction', errMsg(e)),
   });
   const confirm = useMutation({
     mutationFn: () => api.post<Prediction>(`/predictions/${pending!.id}/confirm`),
     onSuccess: (b) => {
       refreshAll(); reset();
-      Alert.alert('Prediction confirmed', b.matched_amount > 0 ? `Matched ${pts(b.matched_amount)} of ${pts(b.amount)} diamonds.` : 'Waiting for another player. You can cancel or change it until it is matched.');
+      showAlert('Prediction confirmed', b.matched_amount > 0 ? `Matched ${pts(b.matched_amount)} of ${pts(b.amount)} diamonds.` : 'Waiting for another player to match it.');
     },
-    onError: (e) => { Alert.alert('Not confirmed', errMsg(e)); setPending(null); refreshAll(); },
+    onError: (e) => { showAlert('Not confirmed', errMsg(e)); setPending(null); refreshAll(); },
   });
   const cancelPending = async () => { const p = pending; setPending(null); if (p) { try { await api.del(`/predictions/${p.id}`); } catch {} } refreshAll(); };
   const cancelPrediction = useMutation({
     mutationFn: (b: Prediction) => api.del(`/predictions/${b.id}`),
-    onSuccess: () => { refreshAll(); reset(); Alert.alert('Prediction cancelled', 'Your diamonds were returned.'); },
-    onError: (e) => Alert.alert('Could not cancel', errMsg(e)),
+    onSuccess: () => { refreshAll(); reset(); showAlert('Prediction cancelled', 'Your diamonds were returned.'); },
+    onError: (e) => showAlert('Could not cancel', errMsg(e)),
   });
 
   const name = (s: Side) => (s === 'a' ? m?.side_a : m?.side_b);
@@ -289,14 +290,6 @@ export default function PredictionScreen({ route, navigation }: any) {
             </Text>
           ) : null}
           {Number(b.unmatched_refund) > 0 ? <Dim style={{ marginTop: 4 }}>↩️ {pts(b.unmatched_refund)} 💎 not matched · returned to you</Dim> : null}
-          {b.can_edit && open ? (
-            <Row style={{ marginTop: 10, gap: 8 }}>
-              <Button style={{ flex: 1 }} small kind="ghost" title={editing?.id === b.id ? 'Editing…' : 'Change'} disabled={editing?.id === b.id}
-                onPress={() => { setEditing(b); setSide(b.side); setAmount(String(b.amount)); }} />
-              <Button style={{ flex: 1 }} small kind="ghost" title="Cancel" loading={cancelPrediction.isPending && cancelPrediction.variables?.id === b.id}
-                onPress={() => Alert.alert('Cancel this prediction?', 'Your diamonds will be returned.', [{ text: 'Keep it', style: 'cancel' }, { text: 'Cancel prediction', style: 'destructive', onPress: () => cancelPrediction.mutate(b) }])} />
-            </Row>
-          ) : null}
         </Card>
       ))}
 
@@ -319,9 +312,9 @@ export default function PredictionScreen({ route, navigation }: any) {
                 <T style={{ fontWeight: '800' }}>{pts(pending?.amount)} 💎</T>
               </Row>
             </View>
-            <Dim style={{ marginTop: 12, marginBottom: 16 }}>
-              The diamonds are used now. You can cancel or change an unmatched prediction while predictions are open.{editing ? ' Your previous prediction is replaced only when you confirm.' : ''}
-            </Dim>
+            <View style={{ marginTop: 12, marginBottom: 16, padding: 12, borderRadius: radius.md, backgroundColor: '#F59E0B14', borderWidth: 1, borderColor: '#F59E0B55' }}>
+              <T style={{ fontSize: 13.5, lineHeight: 19 }}><T style={{ fontWeight: '800' }}>This is final. </T>Once you confirm, the diamonds are used and this prediction can’t be cancelled or changed.</T>
+            </View>
             <Button title="Confirm prediction" onPress={() => confirm.mutate()} loading={confirm.isPending} />
             <Button title="Go back" kind="ghost" style={{ marginTop: 10 }} onPress={cancelPending} disabled={confirm.isPending} />
           </View>

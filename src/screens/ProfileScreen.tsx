@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Constants from 'expo-constants';
-import { Alert, Linking, Text, View } from 'react-native';
+import { Linking, Text, View } from 'react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, errMsg } from '../api';
 import { ORIGIN, POLL_MS } from '../config';
@@ -12,6 +12,7 @@ import { colors, radius } from '../theme';
 import type { User } from '../types';
 import { AccountSheet, AccountSheets } from '../components/AccountSheets';
 import { PlayerIdCard } from '../components/PlayerIdCard';
+import { showAlert } from '../dialog';
 
 function MenuRow({ icon, label, value, onPress, danger }: { icon: React.ReactNode; label: string; value?: string; onPress: () => void; danger?: boolean }) {
   return (
@@ -69,7 +70,7 @@ export default function ProfileScreen({ navigation }: any) {
   const save = async () => {
     setBusy(true);
     try { setUser(await api.put<User>('/me', { name: name.trim() })); setEditing(false); }
-    catch (e) { Alert.alert('Could not save', errMsg(e)); } finally { setBusy(false); }
+    catch (e) { showAlert('Could not save', errMsg(e)); } finally { setBusy(false); }
   };
   const logout = async () => {
     await unregisterPush();
@@ -127,7 +128,7 @@ export default function ProfileScreen({ navigation }: any) {
       ) : (
         <Group>
           <MenuRow icon={<Text style={{ fontSize: 18 }}>✏️</Text>} label="Display name" value={user.name}
-            onPress={() => (nextChange ? Alert.alert('Display name', `You can change your display name once a week. Next change: ${nextChange.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}.`) : setEditing(true))} />
+            onPress={() => (nextChange ? showAlert('Display name', `You can change your display name once a week. Next change: ${nextChange.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}.`) : setEditing(true))} />
           <MenuRow icon={<Text style={{ fontSize: 18 }}>✉️</Text>} label="Email" value={user.pending_email ? 'Waiting for code' : (user.email ?? 'Add email')} onPress={() => setSheet('email')} />
           <MenuRow icon={<ShieldIcon size={20} color={colors.primarySoft} />} label="Password" value="Change" onPress={() => setSheet('password')} />
           {user.mobile_required || user.phone ? (
@@ -147,7 +148,7 @@ export default function ProfileScreen({ navigation }: any) {
       <Dim style={{ marginTop: 10 }}>Diamonds are virtual, for fun only. They have no cash value and cannot be bought, sold or withdrawn.</Dim>
 
       <Button title="Log out" kind="ghost" style={{ marginTop: 22 }}
-        onPress={() => Alert.alert('Log out?', undefined, [{ text: 'Cancel', style: 'cancel' }, { text: 'Log out', style: 'destructive', onPress: logout }])} />
+        onPress={() => showAlert('Log out?', 'You will need to sign in again.', [{ text: 'Cancel', style: 'cancel' }, { text: 'Log out', style: 'destructive', onPress: logout }])} />
       <PressScale onPress={() => navigation.navigate('DeleteAccount')} style={{ marginTop: 14, paddingVertical: 8, alignItems: 'center' }}>
         <Text style={{ color: colors.danger, fontWeight: '600' }}>Delete account</Text>
       </PressScale>

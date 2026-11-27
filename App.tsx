@@ -38,6 +38,7 @@ import SubscriptionScreen from './src/screens/SubscriptionScreen';
 import DeleteAccountScreen from './src/screens/DeleteAccountScreen';
 import NotificationsScreen from './src/screens/NotificationsScreen';
 import ReferralScreen from './src/screens/ReferralScreen';
+import { DialogHost } from './src/dialog';
 
 const qc = new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 5000 } } });
 const nav = createNavigationContainerRef<any>();
@@ -155,6 +156,7 @@ export default function App() {
       <QueryClientProvider client={qc}>
         <StatusBar style="light" />
         <Root />
+        <DialogHost />
       </QueryClientProvider>
     </SafeAreaProvider>
   );

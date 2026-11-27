@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, Image } from 'react-native';
+import { Image } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -11,6 +11,7 @@ import { Country, detectCountry, splitE164, toE164 } from '../countries';
 import { Button, Card, Chip, Dim, Field, Row, Screen, T, VerifiedPill, c } from '../ui';
 import { View } from 'react-native';
 import type { User } from '../types';
+import { showAlert } from '../dialog';
 
 export default function VerifyScreen({ navigation }: any) {
   const qc = useQueryClient();
@@ -28,7 +29,7 @@ export default function VerifyScreen({ navigation }: any) {
   const [img, setImg] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const run = async (fn: () => Promise<void>) => { setBusy(true); try { await fn(); } catch (e) { Alert.alert('Failed', errMsg(e)); } finally { setBusy(false); } };
+  const run = async (fn: () => Promise<void>) => { setBusy(true); try { await fn(); } catch (e) { showAlert('Failed', errMsg(e)); } finally { setBusy(false); } };
   const reload = async () => { setUser(await api.get<User>('/me')); qc.invalidateQueries(); };
 
   const sendCode = () => run(async () => {
@@ -43,7 +44,7 @@ export default function VerifyScreen({ navigation }: any) {
   const verifyPhone = () => run(async () => { setUser(await api.post<User>('/me/phone/verify', { phone: phone.trim(), code: code.trim() })); setSent(false); });
   const pick = async (camera = false) => {
     const p = camera ? await ImagePicker.requestCameraPermissionsAsync() : await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!p.granted) return Alert.alert('Permission needed', camera ? 'Allow camera access to photograph your ID.' : 'Allow photo access to upload your ID.');
+    if (!p.granted) return showAlert('Permission needed', camera ? 'Allow camera access to photograph your ID.' : 'Allow photo access to upload your ID.');
     const r = camera ? await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.7 }) : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7 });
     if (r.canceled) return;
     // Phone photos are often 5-12 MB; shrink to ~1600px JPEG (about 300-600 KB) so the upload is fast and never hits server size limits.
@@ -58,7 +59,7 @@ export default function VerifyScreen({ navigation }: any) {
     f.append('full_name', name.trim());
     f.append('id_document', { uri: img!.uri, name: img!.fileName ?? 'id.jpg', type: img!.mimeType ?? 'image/jpeg' } as any);
     setUser(await api.upload<User>('/me/verify', f));
-    Alert.alert('Submitted', 'A club owner will review your ID.');
+    showAlert('Submitted', 'A club owner will review your ID.');
   });
 
   // Status refreshes by itself, so the player sees the result as soon as an owner reviews the ID.
