@@ -39,37 +39,37 @@ export function WelcomeCard({ user, club, multi, badge }: { user?: User | null; 
 
   return (
     <Animated.View accessibilityLiveRegion={kind ? 'polite' : 'none'}
-      style={{ backgroundColor: colors.primary + '1A', borderWidth: kind ? 1.5 : 1, borderColor: border, borderRadius: 20, padding: 14, marginTop: 4, marginBottom: 4 }}>
+      style={{ backgroundColor: colors.primary + '1A', borderWidth: kind ? 1.5 : 1, borderColor: border, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 10, marginTop: 2, marginBottom: 2 }}>
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
-        <Text style={{ flex: 1, color: colors.text, fontSize: 22, fontWeight: '800', letterSpacing: -0.4 }}>{title}</Text>
+        <Text style={{ flex: 1, color: colors.text, fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>{title}</Text>
         {badge}
       </View>
-      {sub ? <Dim style={{ marginTop: 2 }}>{sub}</Dim> : null}
-      {club ? (
-        // the club is the main thing here: its own line, large, never cut off
-        <View style={{ marginTop: 12, backgroundColor: colors.bg2, borderWidth: 1, borderColor: colors.line, borderRadius: radius.lg, paddingHorizontal: 14, paddingVertical: 12 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <ClubAvatar name={club.name} logo={club.logo} size={46} />
+      {sub ? <Dim style={{ marginTop: 1, fontSize: 12.5 }}>{sub}</Dim> : null}
+      {club && multi ? (
+        // only with 2+ clubs (one club needs no reminder): which club you're in, its own line, never cut off
+        <View style={{ marginTop: 8, backgroundColor: colors.bg2, borderWidth: 1, borderColor: colors.line, borderRadius: radius.md, paddingHorizontal: 10, paddingVertical: 8 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <ClubAvatar name={club.name} logo={club.logo} size={34} />
             <View style={{ flex: 1 }}>
-              <Text style={{ color: colors.primarySoft, fontSize: 11.5, fontWeight: '800', letterSpacing: 0.6, textTransform: 'uppercase' }}>You're in</Text>
-              <Text style={{ color: colors.text, fontWeight: '800', fontSize: 19, lineHeight: 24, marginTop: 2 }} numberOfLines={2}>
+              <Text style={{ color: colors.primarySoft, fontSize: 10, fontWeight: '800', letterSpacing: 0.6, textTransform: 'uppercase' }}>You're in</Text>
+              <Text style={{ color: colors.text, fontWeight: '800', fontSize: 15, lineHeight: 19 }} numberOfLines={2}>
                 {club.name}{club.status === 'active' ? '  ' : ''}
-                {club.status === 'active' ? <ClubVerificationBadge size={16} /> : null}
+                {club.status === 'active' ? <ClubVerificationBadge size={14} /> : null}
               </Text>
             </View>
           </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.line }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 7, paddingTop: 7, borderTopWidth: 1, borderTopColor: colors.line }}>
             <Pressable onPress={() => nav.navigate('Diamonds')} accessibilityRole="button" accessibilityLabel={`${pts(club.balance)} diamonds in ${club.name}`} hitSlop={6}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <DiamondIcon size={18} color={colors.primarySoft} />
-              <Text style={{ color: colors.text, fontWeight: '800', fontSize: 17 }}>{pts(club.balance)}</Text>
+              <DiamondIcon size={15} color={colors.primarySoft} />
+              <Text style={{ color: colors.text, fontWeight: '800', fontSize: 14 }}>{pts(club.balance)}</Text>
             </Pressable>
-            {multi ? (
-              <Pressable onPress={() => nav.navigate('ChooseClub')} accessibilityRole="button" accessibilityLabel={`Switch club (now ${club.name})`}
-                style={({ pressed }) => ({ minHeight: 40, paddingHorizontal: 14, borderRadius: 999, borderWidth: 1, borderColor: colors.primary, justifyContent: 'center', opacity: pressed ? 0.8 : 1 })}>
-                <Text style={{ color: colors.primarySoft, fontWeight: '800', fontSize: 14 }}>⇄ Switch club</Text>
+            {(
+              <Pressable onPress={() => nav.navigate('ChooseClub')} accessibilityRole="button" accessibilityLabel={`Switch club (now ${club.name})`} hitSlop={8}
+                style={({ pressed }) => ({ minHeight: 30, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1, borderColor: colors.primary, justifyContent: 'center', opacity: pressed ? 0.8 : 1 })}>
+                <Text style={{ color: colors.primarySoft, fontWeight: '800', fontSize: 13 }}>⇄ Switch club</Text>
               </Pressable>
-            ) : null}
+            )}
           </View>
         </View>
       ) : null}
