@@ -30,6 +30,14 @@ export function MatchRow({ m, onOpen }: { m: Match; onOpen: OpenMatch }) {
         <TeamPlayerCard m={m} k="b" onOpen={onOpen} mini />
       </Row>
       <MyPredicted m={m} style={{ marginTop: 6, fontSize: 11 }} />
+      {/* same action as the Home cards */}
+      {m.status !== 'settled' ? (
+        <Pressable onPress={() => onOpen(m)} accessibilityRole="button" accessibilityLabel={m.status === 'open' ? 'View match and predict' : 'View match'}
+          style={({ pressed }) => ({ marginTop: 10, minHeight: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.85 : 1,
+            backgroundColor: m.status === 'open' ? colors.primary : 'transparent', borderWidth: 1, borderColor: m.status === 'open' ? colors.primary : colors.line })}>
+          <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15 }}>{m.status === 'open' ? 'View match & predict' : 'View match'}</Text>
+        </Pressable>
+      ) : null}
       {m.status === 'settled' && m.result && m.result !== 'a' && m.result !== 'b' ? <Text style={{ color: colors.dim, fontSize: 12.5, marginTop: 6 }}>Result: {m.result}</Text> : null}
     </View>
   );

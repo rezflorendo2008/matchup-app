@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, errMsg } from '../api';
@@ -19,6 +19,40 @@ type Participants = { total: number; total_a: number; total_b: number; count: nu
 
 const sideColor = (k: Side) => (k === 'a' ? c.a : c.b);
 const QUICK = [10, 50, 100, 500];
+
+/** What a prediction could win: club multiplier, or player-vs-player 1:1; fees come off the profit (same as the website). */
+function winFor(m: Match, side: Side, amt: number) {
+  const fee = Number(m.fee_pct ?? 0), keep = 1 - fee / 100, r2 = (x: number) => Math.round(x * 100) / 100;
+  if (m.mode === 'club') {
+    const gain = r2(amt * Number((side === 'a' ? m.multiplier_a : m.multiplier_b) ?? 0) * keep);
+    return { gain, back: r2(amt + gain), fee, note: null as string | null, upTo: false };
+  }
+  const now = Math.min(amt, Number((side === 'a' ? m.open_b : m.open_a) ?? 0)), gain = r2(amt * keep);
+  const note = now >= amt ? `All ${pts(amt)} 💎 can be matched right away.`
+    : now > 0 ? `${pts(now)} 💎 can be matched right away; the rest waits for a player on the other side (returned if no one matches).`
+    : 'It waits for a player on the other side to match it (returned if no one does).';
+  return { gain, back: r2(amt + gain), fee, note, upTo: now < amt };
+}
+
+/** Pick · Diamonds · Confirm, so people always know where they are. */
+function Steps({ at }: { at: number }) {
+  return (
+    <View accessible accessibilityLabel={`Step ${at} of 3`} style={{ flexDirection: 'row', gap: 6, marginTop: 14 }}>
+      {['Pick', 'Diamonds', 'Confirm'].map((t, i) => {
+        const n = i + 1, done = n < at, on = n === at;
+        return (
+          <View key={t} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', paddingVertical: 8, paddingHorizontal: 9, borderRadius: 12, borderWidth: 1,
+            borderColor: on ? colors.primary : colors.line, backgroundColor: on ? colors.primary + '14' : colors.bg2 }}>
+            <View style={{ width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', marginRight: 7, backgroundColor: done ? colors.success : on ? colors.primary : colors.elevated }}>
+              <Text style={{ color: '#fff', fontWeight: '900', fontSize: 12 }}>{done ? '✓' : n}</Text>
+            </View>
+            <Text style={{ color: on || done ? colors.text : colors.dim, fontWeight: '700', fontSize: 12.5 }} numberOfLines={1}>{t}</Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
 
 /** Small pill used for match facts (mode, limit, start time). */
 const Fact = ({ text }: { text: string }) => (
@@ -138,6 +172,8 @@ export default function PredictionScreen({ route, navigation }: any) {
   const overBalance = !editing && amt > balance;
   const limit = Math.floor(Math.min(editing ? Infinity : balance, max ?? Infinity));
   const valid = !!side && amt >= 1 && !overMax && !overBalance;
+  const amountRef = useRef<TextInput>(null);
+  const pick = (k: Side) => { const first = !side; setSide(k); if (first) setTimeout(() => amountRef.current?.focus(), 250); };   // straight to the amount
 
   const refreshAll = () => ['predictions', 'match', 'match-participants', 'matches', 'clubs', 'wallets', 'home'].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
   const reset = () => { setEditing(null); setSide(null); setAmount(''); setPending(null); };
@@ -167,6 +203,9 @@ export default function PredictionScreen({ route, navigation }: any) {
   if (mq.isLoading) return <Screen title="Match"><CardSkeleton rows={2} kind="match" /></Screen>;
   if (mq.error || !m) return <Screen title="Match"><ErrorBox error={mq.error ?? new Error('Match not found')} onRetry={() => mq.refetch()} /></Screen>;
 
+  // "You could win …" with the club's multiplier and fees (player vs player: how much matches right away)
+  const win = side && valid ? winFor(m, side, amt) : null;
+  const step = !side ? 1 : !valid ? 2 : 3;
   const footer = canPredict ? (
     <>
       {editing ? <Dim style={{ textAlign: 'center', marginBottom: 6, fontSize: 12 }}>Changing your prediction on {name(editing.side)} · {pts(editing.amount)} 💎</Dim> : null}
@@ -177,6 +216,7 @@ export default function PredictionScreen({ route, navigation }: any) {
             title={!side ? 'Pick a team to start' : !(amt >= 1) ? 'Choose your diamonds' : overMax || overBalance ? 'Check the amount' : `${editing ? 'Review change' : 'Predict'} · ${name(side)} · ${pts(amt)} 💎`} />
         </View>
       </Row>
+      {side && win ? <Dim style={{ textAlign: 'center', marginTop: 6, fontSize: 12.5, fontWeight: '600' }}>{name(side)} · {pts(amt)} 💎 · could win {win.upTo ? 'up to ' : ''}+{pts(win.gain)} 💎</Dim> : null}
     </>
   ) : undefined;
 
@@ -200,11 +240,12 @@ export default function PredictionScreen({ route, navigation }: any) {
       {m.can_manage && ['open', 'paused', 'closed'].includes(m.status) ? <ClubControls m={m} onDone={refreshAll} /> : null}
 
       {/* Step 1: pick a side */}
+      {canPredict ? <Steps at={step} /> : null}
       {canPredict ? <SectionHeader small title={editing ? '1. Change your pick' : '1. Pick who wins'} /> : <View style={{ height: spacing.lg }} />}
       <Row style={{ alignItems: 'stretch' }}>
-        <SidePicker m={m} k="a" selected={side === 'a'} canPick={canPredict} onPick={() => setSide('a')} />
+        <SidePicker m={m} k="a" selected={side === 'a'} canPick={canPredict} onPick={() => pick('a')} />
         <View style={{ width: 30, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: c.dim, fontWeight: '800', fontSize: 12 }}>VS</Text></View>
-        <SidePicker m={m} k="b" selected={side === 'b'} canPick={canPredict} onPick={() => setSide('b')} />
+        <SidePicker m={m} k="b" selected={side === 'b'} canPick={canPredict} onPick={() => pick('b')} />
       </Row>
       {Number(m.my_diamonds ?? 0) > 0 ? <Dim style={{ marginTop: 10, textAlign: 'center' }}>You have <T style={{ fontWeight: '800', color: colors.primarySoft }}>{pts(m.my_diamonds ?? 0)} 💎</T> on this match</Dim> : null}
 
@@ -250,7 +291,7 @@ export default function PredictionScreen({ route, navigation }: any) {
             </Row>
             <Row style={{ backgroundColor: colors.bg2, borderRadius: radius.md, borderWidth: 1.5, borderColor: overMax || overBalance ? colors.danger : amt >= 1 ? colors.primary : colors.line, paddingHorizontal: 14 }}>
               <Text style={{ fontSize: 22 }}>💎</Text>
-              <TextInput value={amount} onChangeText={(v) => setAmount(v.replace(/[^0-9.]/g, ''))} keyboardType="decimal-pad" placeholder="0" placeholderTextColor={colors.dim}
+              <TextInput ref={amountRef} value={amount} onChangeText={(v) => setAmount(v.replace(/[^0-9.]/g, ''))} keyboardType="decimal-pad" placeholder="0" placeholderTextColor={colors.dim}
                 accessibilityLabel="Diamonds to predict" returnKeyType="done"
                 style={{ flex: 1, color: colors.text, fontSize: 22, fontWeight: '800', paddingVertical: 10, marginLeft: 10 }} />
               {amount ? <Pressable onPress={() => setAmount('')} hitSlop={10} accessibilityLabel="Clear amount"><Text style={{ color: colors.dim, fontWeight: '700' }}>Clear</Text></Pressable> : null}
@@ -265,6 +306,16 @@ export default function PredictionScreen({ route, navigation }: any) {
                 <View style={{ flex: 1, marginRight: 8 }}><FieldError text={`You only have ${pts(balance)} 💎 here.`} /></View>
                 <Pressable onPress={() => navigation.navigate('AddDiamonds')} hitSlop={8} style={{ marginTop: 6 }}><Text style={{ color: colors.primarySoft, fontWeight: '800' }}>Get diamonds</Text></Pressable>
               </Row>
+            ) : null}
+            {win && side ? (
+              <View accessibilityLiveRegion="polite" style={{ marginTop: 12, padding: 12, borderRadius: radius.md, backgroundColor: colors.success + '14', borderWidth: 1, borderColor: colors.success + '55' }}>
+                <Row style={{ justifyContent: 'space-between' }}>
+                  <T>If {name(side)} win</T>
+                  <T style={{ color: colors.success, fontWeight: '800', fontSize: 16 }}>{win.upTo ? 'up to ' : ''}+{pts(win.gain)} 💎</T>
+                </Row>
+                <Dim style={{ fontSize: 12.5, marginTop: 3 }}>You get {pts(win.back)} 💎 back in total{win.fee > 0 ? ` (after ${pts(win.fee)}% fees)` : ''}.</Dim>
+                {win.note ? <Dim style={{ fontSize: 12.5, marginTop: 3 }}>{win.note}</Dim> : null}
+              </View>
             ) : null}
           </Card>
         </>
@@ -311,6 +362,11 @@ export default function PredictionScreen({ route, navigation }: any) {
                 <Dim>Diamonds</Dim>
                 <T style={{ fontWeight: '800' }}>{pts(pending?.amount)} 💎</T>
               </Row>
+              {pending ? (() => { const w = winFor(m, pending.side, Number(pending.amount)); return (
+                <Row style={{ justifyContent: 'space-between', marginTop: 10 }}>
+                  <Dim>If {name(pending.side)} win</Dim>
+                  <T style={{ fontWeight: '800', color: colors.success }}>{w.upTo ? 'up to ' : ''}+{pts(w.gain)} 💎</T>
+                </Row>); })() : null}
             </View>
             <View style={{ marginTop: 12, marginBottom: 16, padding: 12, borderRadius: radius.md, backgroundColor: '#F59E0B14', borderWidth: 1, borderColor: '#F59E0B55' }}>
               <T style={{ fontSize: 13.5, lineHeight: 19 }}><T style={{ fontWeight: '800' }}>This is final. </T>Once you confirm, the diamonds are used and this prediction can’t be cancelled or changed.</T>
