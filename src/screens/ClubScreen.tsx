@@ -12,6 +12,7 @@ import { colors, radius } from '../theme';
 import type { ClubProfile } from '../types';
 import { showAlert, showToast } from '../dialog';
 import { useActiveClub, useClubContext } from '../club';
+import { RequestDiamondsSheet } from '../components/RequestDiamondsSheet';
 
 type Tab = 'matches' | 'board' | 'about';
 type Period = 'week' | 'month' | 'all';
@@ -114,6 +115,7 @@ export default function ClubScreen({ route, navigation }: any) {
   const qc = useQueryClient();
   const [tab, setTab] = useState<Tab>('matches');
   const [allPast, setAllPast] = useState(false);
+  const [reqOpen, setReqOpen] = useState(false);   // request diamonds popup
   const ctx = useClubContext();
   const setActiveClub = useActiveClub((s) => s.set);
   const q = useQuery({ queryKey: ['club', id], refetchInterval: POLL_MS, queryFn: () => api.get<ClubProfile>(`/clubs/${id}/profile`) });
@@ -173,7 +175,7 @@ export default function ClubScreen({ route, navigation }: any) {
                       <Dim style={{ fontSize: 12.5 }}>Your diamonds here</Dim>
                       <Row style={{ marginTop: 2 }}><DiamondIcon size={22} color={colors.primarySoft} /><Text style={{ color: colors.text, fontWeight: '800', fontSize: 28, marginLeft: 8, letterSpacing: -0.5 }}>{pts(cl.balance)}</Text></Row>
                     </View>
-                    <Button title="＋ Request" small style={{ paddingHorizontal: 18, minHeight: 44 }} onPress={() => navigation.navigate('AddDiamonds', { clubId: cl.id })} />
+                    <Button title="＋ Request" small style={{ paddingHorizontal: 18, minHeight: 44 }} onPress={() => setReqOpen(true)} />
                   </Row>
                   <Row style={{ marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.line }}>
                     {([['Predictions', cl.stats.my_predictions, colors.text], ['Active', cl.stats.my_active, colors.primarySoft], ['Won', cl.stats.my_won, colors.success], ['Lost', cl.stats.my_lost, cl.stats.my_lost ? colors.danger : colors.text]] as [string, number, string][]).map(([l, v, col]) => (
@@ -313,6 +315,7 @@ export default function ClubScreen({ route, navigation }: any) {
           ) : null}
         </>
       )}
+      {reqOpen && cl ? <RequestDiamondsSheet clubId={cl.id} onClose={() => setReqOpen(false)} /> : null}
     </Screen>
   );
 }

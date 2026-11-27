@@ -12,6 +12,7 @@ import { CheckIcon, ChevronDownIcon, ChevronRightIcon } from '../icons';
 import { colors, radius, spacing } from '../theme';
 import type { Prediction, Club, Match } from '../types';
 import { showAlert } from '../dialog';
+import { RequestDiamondsSheet } from '../components/RequestDiamondsSheet';
 
 type Side = 'a' | 'b';
 type Participants = { total: number; total_a: number; total_b: number; count: number; players: number;
@@ -162,6 +163,7 @@ export default function PredictionScreen({ route, navigation }: any) {
   const user = useAuth((s) => s.user);
   const [side, setSide] = useState<Side | null>(route.params?.side ?? null);
   const [amount, setAmount] = useState('');
+  const [reqOpen, setReqOpen] = useState(false);   // request diamonds popup
   const [editing, setEditing] = useState<Prediction | null>(null);
   const [pending, setPending] = useState<Prediction | null>(null);
 
@@ -315,7 +317,7 @@ export default function PredictionScreen({ route, navigation }: any) {
             {overBalance && !overMax ? (
               <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <View style={{ flex: 1, marginRight: 8 }}><FieldError text={`You only have ${pts(balance)} 💎 here.`} /></View>
-                <Pressable onPress={() => navigation.navigate('AddDiamonds')} hitSlop={8} style={{ marginTop: 6 }}><Text style={{ color: colors.primarySoft, fontWeight: '800' }}>Get diamonds</Text></Pressable>
+                <Pressable onPress={() => setReqOpen(true)} hitSlop={8} style={{ marginTop: 6 }}><Text style={{ color: colors.primarySoft, fontWeight: '800' }}>Get diamonds</Text></Pressable>
               </Row>
             ) : null}
             {win && side ? (
@@ -387,6 +389,7 @@ export default function PredictionScreen({ route, navigation }: any) {
           </View>
         </View>
       </Modal>
+      {reqOpen ? <RequestDiamondsSheet clubId={m.club_id} onClose={() => setReqOpen(false)} /> : null}
     </Screen>
   );
 }
