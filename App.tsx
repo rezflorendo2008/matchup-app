@@ -53,6 +53,7 @@ function Tabs() {
       <Tab.Screen name="Matches" component={MatchesScreen} />
       <Tab.Screen name="Clubs" component={ClubsScreen} />
       <Tab.Screen name="History" component={HistoryScreen} />
+      <Tab.Screen name="Alerts" component={NotificationsScreen} options={{ title: 'Notifications' }} />
       <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Account' }} />
     </Tab.Navigator>
   );

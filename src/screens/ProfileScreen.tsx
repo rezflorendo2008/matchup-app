@@ -108,7 +108,7 @@ export default function ProfileScreen({ navigation }: any) {
       <SectionHeader title="My activity" />
       <Group>
         <MenuRow icon={<DiamondIcon size={20} color={colors.success} />} label="Refer & earn" onPress={() => navigation.navigate('Referral')} />
-        <MenuRow icon={<BellIcon size={20} color={colors.primarySoft} />} label="Notifications" onPress={() => navigation.navigate('Notifications')} />
+        <MenuRow icon={<BellIcon size={20} color={colors.primarySoft} />} label="Notifications" onPress={() => navigation.navigate('Alerts')} />
         <MenuRow icon={<DiamondIcon size={20} color={colors.primarySoft} />} label="My diamonds" onPress={() => navigation.navigate('Diamonds')} />
         <MenuRow icon={<HistoryIcon size={20} color={colors.primarySoft} />} label="Prediction history" onPress={() => navigation.navigate('History')} />
       </Group>

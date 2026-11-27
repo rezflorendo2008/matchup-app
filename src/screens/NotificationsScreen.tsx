@@ -16,7 +16,8 @@ const ICON: Record<string, (c: string) => React.ReactNode> = {
 };
 const TONE: Record<string, string> = { win: colors.success, loss: colors.dim, refund: colors.primarySoft, diamonds: colors.primarySoft, match: colors.primary, kyc: colors.success, membership: colors.success, referral: colors.success };
 
-export default function NotificationsScreen({ navigation }: any) {
+export default function NotificationsScreen({ navigation, route }: any) {
+  const asTab = route?.name === 'Alerts';   // the bell in the bottom menu (no back arrow)
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ['notifications'], queryFn: () => api.get<{ data: N[]; unread: number }>('/notifications'), refetchInterval: POLL_MS });
   const readAll = useMutation({
@@ -37,8 +38,14 @@ export default function NotificationsScreen({ navigation }: any) {
   };
 
   return (
-    <Screen title="Notifications" onRefresh={() => q.refetch()} refreshing={q.isRefetching}
-      right={unread > 0 ? <Text onPress={() => readAll.mutate()} accessibilityRole="button" style={{ color: colors.primarySoft, fontWeight: '700', fontSize: 13 }}>Read all</Text> : null}>
+    <Screen title={asTab ? undefined : 'Notifications'} onRefresh={() => q.refetch()} refreshing={q.isRefetching}
+      right={!asTab && unread > 0 ? <Text onPress={() => readAll.mutate()} accessibilityRole="button" style={{ color: colors.primarySoft, fontWeight: '700', fontSize: 13 }}>Read all</Text> : null}>
+      {asTab ? (
+        <Row style={{ justifyContent: 'space-between', marginBottom: 12 }}>
+          <Text style={{ color: colors.text, fontSize: 22, fontWeight: '800', letterSpacing: -0.3 }} accessibilityRole="header">Notifications</Text>
+          {unread > 0 ? <Text onPress={() => readAll.mutate()} accessibilityRole="button" style={{ color: colors.primarySoft, fontWeight: '700', fontSize: 13 }}>Read all</Text> : null}
+        </Row>
+      ) : null}
       {q.isLoading ? <CardSkeleton rows={4} /> : q.error ? <ErrorBox error={q.error} onRetry={() => q.refetch()} />
         : (q.data?.data.length ?? 0) === 0 ? <EmptyState icon={<BellIcon size={26} color={colors.dim} />} title="You're all caught up" text="Wins, diamonds, new matches and match start reminders show up here." />
         : q.data!.data.map((n) => {
