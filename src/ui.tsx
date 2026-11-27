@@ -4,7 +4,7 @@ import {
   ActivityIndicator, Animated, Easing, Image, KeyboardAvoidingView, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TextInputProps, View, ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 import { api } from './api';
 import { POLL_MS } from './config';
@@ -67,11 +67,13 @@ export function DiamondWalletButton() {
   );
 }
 
-/** The club you're in, next to the diamonds (only with 2+ clubs); tap to switch. */
+/** The club you're in, next to the diamonds (only with 2+ clubs, not on Home); tap to switch. */
 export function ClubChip() {
   const nav = useNavigation<any>();
+  const route = useRoute();
   const { multi, active } = useClubContext();
-  if (!multi) return null;
+  // only on subpages: on Home the welcome card has Switch club
+  if (!multi || route.name === 'Home') return null;
   return (
     <PressScale onPress={() => nav.navigate('ChooseClub')} accessibilityLabel={active ? `Club: ${active.name}. Switch club` : 'Choose a club'} hitSlop={6}
       style={{ flexDirection: 'row', alignItems: 'center', height: 40, maxWidth: 140, paddingLeft: 6, paddingRight: 10, marginRight: 8, borderRadius: 20, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line }}>
