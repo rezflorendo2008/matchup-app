@@ -185,7 +185,21 @@ export default function ClubScreen({ route, navigation }: any) {
                   </Row>
                   <Row style={{ marginTop: 10, gap: 6 }}><CheckIcon size={15} color={colors.success} /><Text style={{ color: colors.success, fontWeight: '700', fontSize: 12.5 }}>Verified member</Text></Row>
                 </View>
-              ) : !cl.membership ? (
+              ) : null}
+              {approved && cl.referral ? (
+                // referrals on: one tidy row in the header card (not a loose button)
+                <Pressable onPress={() => navigation.navigate('Referral', { clubId: cl.id })} accessibilityRole="button" accessibilityLabel={`Invite friends to ${cl.name} and earn diamonds`}
+                  style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 10, paddingHorizontal: 12, paddingVertical: 10, minHeight: 56,
+                    backgroundColor: colors.success + '14', borderWidth: 1, borderColor: colors.success + '55', borderRadius: radius.md, opacity: pressed ? 0.85 : 1 })}>
+                  <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: colors.success + '26', alignItems: 'center', justifyContent: 'center' }}><Text style={{ fontSize: 19 }}>🎁</Text></View>
+                  <View style={{ flex: 1 }}>
+                    <T style={{ fontWeight: '800' }}>Invite friends</T>
+                    <Dim style={{ fontSize: 12.5 }} numberOfLines={2}>Earn {cl.referral.text}</Dim>
+                  </View>
+                  <ChevronRightIcon size={18} />
+                </Pressable>
+              ) : null}
+              {!approved && !cl.membership ? (
                 <>
                   <Button title="Request to join" style={{ marginTop: 14 }} onPress={() => join.mutate(cl.club_code)} loading={join.isPending} />
                   <Dim style={{ marginTop: 8 }}>The club owner verifies you first. Then you can see matches and make predictions.</Dim>
@@ -201,15 +215,10 @@ export default function ClubScreen({ route, navigation }: any) {
             </Card>
           ) : null}
 
-          {/* only the actions that apply: enter this club (when you're in several) and invite friends (when referrals are on) */}
-          {approved && (!isHere || cl.referral) ? (
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              {!isHere ? (
-                <Button title="Enter this club" small style={{ flexGrow: 1, flexBasis: 140 }}
-                  onPress={() => { setActiveClub(cl.id); showToast(`You're now in ${cl.name}`); navigation.navigate('Tabs', { screen: 'Home' }); }} />
-              ) : null}
-              {cl.referral ? <Button title="Invite & earn 🎁" small kind="ghost" style={{ flexGrow: 1, flexBasis: 140 }} onPress={() => navigation.navigate('Referral', { clubId: cl.id })} /> : null}
-            </View>
+          {/* enter this club: only when you're in several clubs and this isn't the one you're in */}
+          {approved && !isHere ? (
+            <Button title="Enter this club" style={{ marginBottom: 4 }}
+              onPress={() => { setActiveClub(cl.id); showToast(`You're now in ${cl.name}`); navigation.navigate('Tabs', { screen: 'Home' }); }} />
           ) : null}
 
           {approved ? <TabBar value={active} onChange={setTab} tabs={tabs} /> : null}
@@ -273,12 +282,6 @@ export default function ClubScreen({ route, navigation }: any) {
                 <InfoRow label="Club ID" hint="Friends join with this ID."
                   value={<MetaChip onPress={() => copyId(cl.club_code)} label={`Copy club ID ${cl.club_code}`}><Text style={chipText}>{cl.club_code}</Text><Text style={{ color: colors.primarySoft, fontWeight: '800' }}>⧉</Text></MetaChip>} />
               </Card>
-              {approved && cl.referral ? (
-                <Card onPress={() => navigation.navigate('Referral', { clubId: id })} style={{ borderColor: colors.success + '88' }}>
-                  <T style={{ fontWeight: '800' }}>Refer friends, earn diamonds 🎁</T>
-                  <Dim style={{ marginTop: 2 }}>Earn {cl.referral.text}. Tap to get your link.</Dim>
-                </Card>
-              ) : null}
               {approved && cl.join_qr_svg ? (
                 <>
                   <SectionHeader title="Invite to this club" />
