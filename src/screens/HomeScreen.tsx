@@ -136,7 +136,7 @@ export default function HomeScreen({ navigation }: any) {
                   <Row>
                     {won ? <ArrowUpIcon /> : lost ? <ArrowDownIcon /> : <HistoryIcon size={16} />}
                     <T style={{ marginLeft: 6, fontWeight: '800', color: won ? c.good : c.dim }}>
-                      {won ? `+${pts(b.reward)} 💎` : lost ? `−${pts(b.matched_amount)} 💎` : `${pts(b.reward)} 💎 back`}
+                      {won ? `+${pts(b.reward)} 💎` : lost ? `−${pts(b.matched_amount)} 💎` : `${pts((Number(b.matched_amount) > 0 ? Number(b.reward || 0) + Number(b.unmatched_refund || 0) : Number(b.original_amount ?? b.amount)))} 💎 returned`}
                     </T>
                   </Row>
                 </Row>

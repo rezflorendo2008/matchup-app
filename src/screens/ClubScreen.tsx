@@ -9,7 +9,8 @@ import { Badge, Button, Card, CardSkeleton, Chip, ClubAvatar, ClubVerificationBa
 import { DiamondIcon, TrophyIcon } from '../icons';
 import { colors, radius } from '../theme';
 import type { ClubProfile } from '../types';
-import { showAlert } from '../dialog';
+import { showAlert, showToast } from '../dialog';
+import { useActiveClub, useClubContext } from '../club';
 
 type Tab = 'matches' | 'board' | 'about';
 type Period = 'week' | 'month' | 'all';
@@ -93,6 +94,9 @@ export default function ClubScreen({ route, navigation }: any) {
   const id: number = route.params.id;
   const qc = useQueryClient();
   const [tab, setTab] = useState<Tab>('matches');
+  const [allPast, setAllPast] = useState(false);
+  const ctx = useClubContext();
+  const setActiveClub = useActiveClub((s) => s.set);
   const q = useQuery({ queryKey: ['club', id], refetchInterval: POLL_MS, queryFn: () => api.get<ClubProfile>(`/clubs/${id}/profile`) });
   const refresh = () => ['club', 'clubs', 'matches', 'home', 'wallets', 'leaderboard'].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
 
@@ -146,6 +150,19 @@ export default function ClubScreen({ route, navigation }: any) {
             </Card>
           )}
 
+          {approved ? (
+            // the things members come here to do, one tap away
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+              {ctx.multi && ctx.active?.id !== cl.id ? (
+                <Button title="Enter this club" small style={{ flexGrow: 1, flexBasis: 140 }}
+                  onPress={() => { setActiveClub(cl.id); showToast(`You're now in ${cl.name}`); navigation.navigate('Tabs', { screen: 'Home' }); }} />
+              ) : null}
+              <Button title="Request diamonds" small kind={ctx.multi && ctx.active?.id !== cl.id ? 'ghost' : 'primary'} style={{ flexGrow: 1, flexBasis: 140 }}
+                onPress={() => navigation.navigate('AddDiamonds', { clubId: cl.id })} />
+              {cl.referral ? <Button title="Invite & earn" small kind="ghost" style={{ flexGrow: 1, flexBasis: 140 }} onPress={() => navigation.navigate('Referral', { clubId: cl.id })} /> : null}
+            </View>
+          ) : null}
+
           {approved ? <TabBar value={active} onChange={setTab} tabs={tabs} /> : null}
 
           {active === 'matches' ? (
@@ -164,11 +181,14 @@ export default function ClubScreen({ route, navigation }: any) {
               <SectionHeader title="Open and upcoming" />
               {cl.current_matches.length === 0
                 ? <EmptyState title="Nothing open right now" text="New events and matches from this club will appear here." />
-                : <EventGroups matches={cl.current_matches} onOpen={open} />}
+                : <EventGroups matches={cl.current_matches} onOpen={open} hideClub />}
               {cl.past_matches.length > 0 ? (
                 <>
                   <SectionHeader title="Ended in the last 7 days" />
-                  <EventGroups matches={cl.past_matches} onOpen={open} />
+                  <EventGroups matches={allPast ? cl.past_matches : cl.past_matches.slice(0, 3)} onOpen={open} hideClub />
+                  {cl.past_matches.length > 3 ? (
+                    <Button title={allPast ? 'Show fewer' : `Show all ${cl.past_matches.length} finished matches`} kind="ghost" small onPress={() => setAllPast(!allPast)} />
+                  ) : null}
                 </>
               ) : null}
             </>

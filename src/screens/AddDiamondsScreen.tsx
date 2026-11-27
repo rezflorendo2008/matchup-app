@@ -5,13 +5,15 @@ import { api, errMsg } from '../api';
 import { Badge, Button, Card, Chip, Dim, ErrorBox, Field, H2, Loading, Row, Screen, T, pts, when } from '../ui';
 import type { Club } from '../types';
 import { showAlert } from '../dialog';
+import { useClubContext } from '../club';
 
-export default function AddDiamondsScreen({ navigation }: any) {
+export default function AddDiamondsScreen({ navigation, route }: any) {
   const qc = useQueryClient();
   const clubsQ = useQuery({ queryKey: ['clubs'], queryFn: () => api.get<Club[]>('/clubs') });
   const approved = (clubsQ.data ?? []).filter((x) => x.membership === 'approved');
   const [clubId, setClubId] = useState<number | null>(null);
-  const club = approved.find((x) => x.id === clubId) ?? approved[0];
+  const { active } = useClubContext();
+  const club = approved.find((x) => x.id === (clubId ?? route?.params?.clubId)) ?? approved.find((x) => x.id === active?.id) ?? approved[0];
   const [amount, setAmount] = useState('');
 
   const reqs = useQuery({ enabled: !!club, queryKey: ['tx', club?.id, 'requests'], queryFn: () => api.get<{ id: number; amount: number; status: string; created_at: string }[]>(`/clubs/${club!.id}/requests`) });

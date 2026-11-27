@@ -29,7 +29,6 @@ export default function DiamondsScreen({ navigation }: any) {
   const [filter, setFilter] = useState('all');
   const { active } = useClubContext();
   const club = approved.find((x) => x.id === clubId) ?? approved.find((x) => x.id === active?.id) ?? approved[0];
-  const total = approved.reduce((a, x) => a + Number(x.balance ?? 0), 0);
 
   const tx = useQuery({ enabled: !!club, queryKey: ['tx', club?.id], refetchInterval: POLL_MS, queryFn: () => api.get<{ data: Tx[] }>(`/clubs/${club!.id}/wallet/transactions`) });
   const reqs = useQuery({ enabled: !!club, queryKey: ['tx', club?.id, 'requests'], queryFn: () => api.get<{ id: number; amount: number; status: string; created_at: string }[]>(`/clubs/${club!.id}/requests`) });
@@ -49,12 +48,12 @@ export default function DiamondsScreen({ navigation }: any) {
           <>
             <View style={{ backgroundColor: colors.elevated, borderRadius: 24, padding: 20, borderWidth: 1, borderColor: colors.line, overflow: 'hidden' }}>
               <View style={{ position: 'absolute', right: -30, top: -30, width: 140, height: 140, borderRadius: 70, backgroundColor: colors.primary, opacity: 0.2 }} />
-              <Dim>{approved.length > 1 ? 'Total diamonds' : club.name}</Dim>
+              <Dim>Diamonds in {club.name}</Dim>
               <Row style={{ marginTop: 6 }}>
                 <DiamondIcon size={34} color={colors.primarySoft} />
-                <Text style={{ color: colors.text, fontSize: 40, fontWeight: '800', marginLeft: 10, letterSpacing: -1 }}>{pts(total)}</Text>
+                <Text style={{ color: colors.text, fontSize: 40, fontWeight: '800', marginLeft: 10, letterSpacing: -1 }}>{pts(club.balance)}</Text>
               </Row>
-              <Button title="Request diamonds" onPress={() => navigation.navigate('AddDiamonds')} style={{ marginTop: 16 }} />
+              <Button title="Request diamonds" onPress={() => navigation.navigate('AddDiamonds', { clubId: club.id })} style={{ marginTop: 16 }} />
               <Dim style={{ marginTop: 10, fontSize: 12 }}>Virtual only. The club owner or an agent adds them.</Dim>
             </View>
 
