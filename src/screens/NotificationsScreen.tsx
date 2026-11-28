@@ -6,6 +6,7 @@ import { POLL_MS } from '../config';
 import { Card, CardSkeleton, Dim, EmptyState, ErrorBox, Row, Screen, T, when } from '../ui';
 import { ArrowDownIcon, ArrowUpIcon, BellIcon, CheckBadgeIcon, DiamondIcon, TargetIcon, TrophyIcon, UsersIcon } from '../icons';
 import { colors, radius } from '../theme';
+import { openNotification } from '../pushNav';
 
 type N = { id: number; type: string; title: string; body: string | null; data: Record<string, any>; read: boolean; created_at: string };
 
@@ -28,14 +29,8 @@ export default function NotificationsScreen({ navigation, route }: any) {
   // Opening the centre counts as having seen them: clear the badge after a moment.
   useEffect(() => { if (unread > 0) { const t = setTimeout(() => readAll.mutate(), 2500); return () => clearTimeout(t); } }, [unread]);
 
-  const open = (n: N) => {
-    if (n.data?.match_id) navigation.navigate('Prediction', { id: n.data.match_id });
-    else if (n.type === 'kyc') navigation.navigate('Verify');
-    else if (n.type === 'referral') navigation.navigate('Referral');
-    else if (n.type === 'diamonds') navigation.navigate('Diamonds');
-    else if (n.type === 'membership') navigation.navigate('Clubs');
-    else if (n.data?.prediction_id) navigation.navigate('History');
-  };
+  // same rules as a tapped push (src/pushNav.ts)
+  const open = (n: N) => openNotification(navigation, n.type, n.data ?? {});
 
   return (
     <Screen title={asTab ? undefined : 'Notifications'} onRefresh={() => q.refetch()} refreshing={q.isRefetching}
