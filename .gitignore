@@ -30,8 +30,10 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
+# local env files (copy .env.example to .env; release builds read EAS environment variables)
+.env
 .env*.local
+!.env.example
 
 # typescript
 *.tsbuildinfo

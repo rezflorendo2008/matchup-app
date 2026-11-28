@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { Alert, Linking, Text, View } from 'react-native';
+import { Linking, Text, View } from 'react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, errMsg } from '../api';
 import { ORIGIN } from '../config';
 import { unregisterPush } from '../push';
 import { useAuth } from '../store';
-import { Button, Card, CardSkeleton, Dim, ErrorBox, Field, H1, Row, Screen, T } from '../ui';
+import { Button, Card, CardSkeleton, Dim, ErrorBox, Field, Row, Screen, T } from '../ui';
 import { colors, radius } from '../theme';
+import { showAlert } from '../dialog';
 
 type Check = { blocked: string | null; needs_password: boolean; owns_clubs: number };
 
@@ -26,18 +27,16 @@ export default function DeleteAccountScreen({ navigation }: any) {
       await unregisterPush();
       await api.post('/me/delete', { confirm, password: d?.needs_password ? password : undefined });
       await signOut(); qc.clear();
-    } catch (e) { Alert.alert('Could not delete account', errMsg(e)); } finally { setBusy(false); }
+    } catch (e) { showAlert('Could not delete account', errMsg(e)); } finally { setBusy(false); }
   };
-  const ask = () => Alert.alert('Delete your account?', 'This cannot be undone.', [{ text: 'Cancel', style: 'cancel' }, { text: 'Delete forever', style: 'destructive', onPress: run }]);
+  const ask = () => showAlert('Delete your account?', 'This cannot be undone.', [{ text: 'Cancel', style: 'cancel' }, { text: 'Delete forever', style: 'destructive', onPress: run }]);
 
   const Item = ({ children }: { children: React.ReactNode }) => (
     <Row style={{ alignItems: 'flex-start', marginBottom: 6 }}><Text style={{ color: colors.dim, marginRight: 8 }}>•</Text><View style={{ flex: 1 }}><Dim>{children}</Dim></View></Row>
   );
 
   return (
-    <Screen edges={['top']}>
-      <Button title="‹ Back" kind="ghost" onPress={() => navigation.goBack()} style={{ alignSelf: 'flex-start', paddingVertical: 8, paddingHorizontal: 14, marginBottom: 10 }} />
-      <H1>Delete account</H1>
+    <Screen title="Delete account">
       <Card>
         <T style={{ fontWeight: '800', marginBottom: 8 }}>What happens</T>
         <Item>Your name, email, phone number, ID photo and sign-ins are erased.</Item>

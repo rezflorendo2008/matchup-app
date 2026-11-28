@@ -1,15 +1,17 @@
+import { BrandMark, DiamondGem } from './components/Brand';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator, Animated, Easing, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TextInputProps, View, ViewStyle,
+  ActivityIndicator, Animated, Easing, Image, KeyboardAvoidingView, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TextInputProps, View, ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 import { api } from './api';
 import { POLL_MS } from './config';
 import { colors, font, radius, shadow, spacing } from './theme';
-import { AlertIcon, CheckBadgeIcon, DiamondIcon, PlusIcon } from './icons';
+import { AlertIcon, BellIcon, CheckBadgeIcon, ChevronDownIcon, ChevronLeftIcon, DiamondIcon, PlusIcon } from './icons';
 import type { Club } from './types';
+import { useClubContext } from './club';
 
 /** Colour aliases kept for the existing screens; new code should import from ./theme. */
 export const c = {
@@ -43,13 +45,11 @@ export function PressScale({ children, onPress, style, wrapStyle, disabled, scal
 
 /* ---------- header & wallet ---------- */
 
-export function Logo({ size = 30 }: { size?: number }) {
+export function Logo({ size = 30, compact }: { size?: number; compact?: boolean }) {
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-      <View style={{ width: size, height: size, borderRadius: size * 0.3, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', marginRight: 8 }}>
-        <DiamondIcon size={size * 0.62} color={colors.white} />
-      </View>
-      <Text style={s.brand}>Match<Text style={{ color: colors.primarySoft }}>Up</Text></Text>
+    <View style={{ flexDirection: 'row', alignItems: 'center' }} accessible accessibilityLabel="PickArena">
+      <BrandMark size={size * 1.25} />
+      {compact ? null : <Text style={[s.brand, { marginLeft: 6 }]}>Pick<Text style={{ color: colors.primarySoft }}>Arena</Text></Text>}
     </View>
   );
 }
@@ -57,38 +57,128 @@ export function Logo({ size = 30 }: { size?: number }) {
 /** Total diamonds with a compact "+" that opens Add Diamonds. */
 export function DiamondWalletButton() {
   const nav = useNavigation<any>();
-  const q = useQuery({ queryKey: ['clubs'], queryFn: () => api.get<Club[]>('/clubs'), refetchInterval: POLL_MS });
-  const total = (q.data ?? []).filter((x) => x.membership === 'approved').reduce((a, x) => a + Number(x.balance ?? 0), 0);
+  const { total } = useClubContext();   // the club you're in (or your only club)
   return (
-    <PressScale onPress={() => nav.navigate('AddDiamonds')} accessibilityLabel="Add diamonds" hitSlop={8} style={s.pill}>
-      <DiamondIcon size={16} color={colors.primarySoft} />
+    <PressScale onPress={() => nav.navigate('Diamonds')} accessibilityLabel="My diamonds" hitSlop={8} style={s.pill}>
+      <DiamondGem size={18} />
       <Text style={s.pillText}>{pts(total)}</Text>
       <View style={s.plus}><PlusIcon size={14} color={colors.white} /></View>
     </PressScale>
   );
 }
 
-export function AppHeader() {
+/** The club you're in, next to the diamonds (only with 2+ clubs, not on Home); tap to switch. */
+export function ClubChip() {
+  const nav = useNavigation<any>();
+  const route = useRoute();
+  const { multi, active } = useClubContext();
+  // only on subpages: on Home the welcome card has Switch club
+  if (!multi || route.name === 'Home') return null;
   return (
-    <View style={s.bar}>
-      <Logo />
-      <DiamondWalletButton />
+    <PressScale onPress={() => nav.navigate('ChooseClub')} accessibilityLabel={active ? `Club: ${active.name}. Switch club` : 'Choose a club'} hitSlop={6}
+      style={{ flexDirection: 'row', alignItems: 'center', height: 40, maxWidth: 140, paddingLeft: 6, paddingRight: 10, marginRight: 8, borderRadius: 20, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line }}>
+      {active ? <ClubAvatar name={active.name} logo={active.logo} size={22} /> : null}
+      <Text style={{ color: colors.text, fontWeight: '700', fontSize: 13, marginLeft: 6, flexShrink: 1 }} numberOfLines={1}>{active ? active.name : 'Choose club'}</Text>
+      <ChevronDownIcon size={14} />
+    </PressScale>
+  );
+}
+
+/** Bell with an unread counter; opens the notification centre. */
+/** "Verified" pill shown next to a player's name once email/phone and ID are both verified. */
+export function VerifiedPill({ small }: { small?: boolean }) {
+  return (
+    <View accessibilityLabel="Verified account" style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', backgroundColor: colors.success + '22', borderColor: colors.success + '88', borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: small ? 8 : 10, paddingVertical: small ? 2 : 4 }}>
+      <CheckBadgeIcon size={small ? 13 : 15} color={colors.success} />
+      <Text style={{ color: colors.success, fontWeight: '800', fontSize: small ? 11 : 12, marginLeft: 4 }}>Verified</Text>
     </View>
   );
 }
 
-export function Screen({ children, scroll = true, onRefresh, refreshing = false, edges, hideBar = false }: {
-  children: React.ReactNode; scroll?: boolean; onRefresh?: () => void; refreshing?: boolean; edges?: ('top' | 'bottom')[]; hideBar?: boolean;
-}) {
+export function AppHeader() {
+  const { multi } = useClubContext();   // with the club chip there, show just the logo mark
   return (
-    <SafeAreaView style={s.screen} edges={edges ?? ['top']}>
-      {hideBar ? null : <AppHeader />}
-      {scroll ? (
-        <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: 48 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}
-          refreshControl={onRefresh ? <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primarySoft} /> : undefined}>
-          {children}
-        </ScrollView>
-      ) : children}
+    <View style={s.bar}>
+      <Logo compact={multi} />
+      <View style={{ flexDirection: 'row', alignItems: 'center', flexShrink: 1, marginLeft: 8 }}>
+        <ClubChip />
+        <DiamondWalletButton />
+      </View>
+    </View>
+  );
+}
+
+/** Display names are short like usernames (24 characters, letters, numbers, spaces and . _ - '); shows a live counter. */
+export const NAME_MAX = 24;
+export function NameField({ label = 'Display name', value, onChangeText, error, ...p }: TextInputProps & { label?: string; value: string; onChangeText: (v: string) => void; error?: string | null }) {
+  const n = value.trim().length;
+  return (
+    <View style={{ marginBottom: spacing.md }}>
+      <Field label={label} value={value} onChangeText={onChangeText} maxLength={NAME_MAX} autoCapitalize="words" autoCorrect={false} {...p} error={error} style={[p.style as any, { marginBottom: 0 }]} />
+      <Text style={{ color: n > 0 && n < 2 ? colors.danger : colors.dim, fontSize: 11.5, marginTop: -6 }}>{n}/{NAME_MAX} · letters, numbers, spaces and . _ - '</Text>
+    </View>
+  );
+}
+
+/** Shown on every screen while a club has not decided on the player's join request yet. */
+export function PendingNotice() {
+  const nav = useNavigation<any>();
+  const q = useQuery({ queryKey: ['clubs'], queryFn: () => api.get<Club[]>('/clubs'), refetchInterval: POLL_MS });
+  const names = (q.data ?? []).filter((c) => c.membership === 'pending').map((c) => c.name);
+  if (!names.length) return null;
+  const list = names.length === 1 ? names[0] : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+  return (
+    <Pressable onPress={() => nav.navigate('Tabs', { screen: 'Clubs' })} accessibilityRole="button" accessibilityLabel={`Waiting for club approval. ${list} will verify you soon.`}
+      style={{ marginHorizontal: spacing.lg, marginTop: 8, paddingVertical: 7, paddingHorizontal: 10, borderRadius: radius.md, backgroundColor: colors.amber + '1A', borderWidth: 1, borderColor: colors.amber + '66' }}>
+      <Text style={{ color: colors.amber, fontWeight: '800', fontSize: 12.5 }} numberOfLines={1}>⏳ Waiting for club approval · <Text style={{ color: colors.text }}>{list}</Text></Text>
+      <Text style={{ color: colors.dim, fontSize: 11.5, marginTop: 1 }} numberOfLines={1}>Predictions unlock once the club approves you.</Text>
+    </Pressable>
+  );
+}
+
+/** Header for pushed (detail) screens: back arrow, title and an optional action on the right. Stays fixed while the page scrolls. */
+export function TopBar({ title, right, onBack, hideBack }: { title?: string; right?: React.ReactNode; onBack?: () => void; hideBack?: boolean }) {
+  const nav = useNavigation<any>();
+  const back = onBack ?? (() => (nav.canGoBack() ? nav.goBack() : nav.navigate('Tabs')));
+  return (
+    <View style={s.topBar}>
+      {hideBack ? <View style={{ width: 40 }} /> : (
+        <PressScale onPress={back} accessibilityLabel="Go back" hitSlop={8} style={s.backBtn}>
+          <ChevronLeftIcon size={22} color={colors.text} />
+        </PressScale>
+      )}
+      <Text style={s.topTitle} numberOfLines={1} accessibilityRole="header">{title ?? ''}</Text>
+      <View style={{ minWidth: 40, alignItems: 'flex-end' }}>{right}</View>
+    </View>
+  );
+}
+
+/**
+ * Page wrapper. Tab screens get the brand header; give a `title` to get the back-arrow TopBar instead (detail screens).
+ * `footer` is pinned to the bottom above the keyboard, for the screen's main action.
+ */
+export function Screen({ children, scroll = true, onRefresh, refreshing = false, edges, hideBar = false, title, right, footer, hideBack }: {
+  children: React.ReactNode; scroll?: boolean; onRefresh?: () => void; refreshing?: boolean; edges?: ('top' | 'bottom')[]; hideBar?: boolean;
+  title?: string; right?: React.ReactNode; footer?: React.ReactNode; hideBack?: boolean;
+}) {
+  const detail = title !== undefined;
+  const body = scroll ? (
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: spacing.lg, paddingBottom: footer ? 24 : 48 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}
+      keyboardDismissMode="on-drag" refreshControl={onRefresh ? <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primarySoft} /> : undefined}>
+      {children}
+    </ScrollView>
+  ) : children;
+  return (
+    <SafeAreaView style={s.screen} edges={edges ?? (detail ? ['top', 'bottom'] : ['top'])}>
+      {hideBar ? null : detail ? <TopBar title={title} right={right} hideBack={hideBack} /> : <AppHeader />}
+      {hideBar ? null : <PendingNotice />}
+      {footer ? (
+        // Android draws edge to edge (behind the keyboard), so the window no longer shrinks for it: pad on both platforms.
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
+          {body}
+          <View style={s.footer}>{footer}</View>
+        </KeyboardAvoidingView>
+      ) : body}
     </SafeAreaView>
   );
 }
@@ -102,10 +192,10 @@ export const T = ({ children, style, numberOfLines, selectable }: { children?: R
   <Text style={[s.text, style]} numberOfLines={numberOfLines} selectable={selectable}>{children}</Text>;
 
 /** Section title with an optional action on the right ("See all"). */
-export function SectionHeader({ title, action, onAction }: { title: string; action?: string; onAction?: () => void }) {
+export function SectionHeader({ title, action, onAction, small }: { title: string; action?: string; onAction?: () => void; small?: boolean }) {
   return (
-    <View style={s.sectionHead}>
-      <Text style={s.sectionTitle}>{title}</Text>
+    <View style={[s.sectionHead, small && { marginTop: spacing.lg, marginBottom: 10 }]}>
+      <Text style={[s.sectionTitle, small && { fontSize: 16 }]}>{title}</Text>
       {action && onAction ? <Pressable onPress={onAction} hitSlop={10}><Text style={s.sectionAction}>{action}</Text></Pressable> : null}
     </View>
   );
@@ -124,25 +214,67 @@ export function Button({ title, onPress, kind = 'primary', loading, disabled, st
   const bg = kind === 'primary' ? colors.primary : kind === 'danger' ? colors.danger : 'transparent';
   return (
     <PressScale onPress={onPress} disabled={disabled || loading} scaleTo={0.98}
-      style={[s.btn, small && { paddingVertical: 9 }, { backgroundColor: bg, borderColor: kind === 'ghost' ? colors.line : bg, opacity: disabled ? 0.45 : 1 }, style]}>
-      {loading ? <ActivityIndicator color="#fff" /> : <Text style={[s.btnText, small && { fontSize: font.size.sm }, kind === 'ghost' && { color: colors.text }]}>{title}</Text>}
+      style={[s.btn, small && { paddingVertical: 10, minHeight: 42 }, { backgroundColor: bg, borderColor: kind === 'ghost' ? colors.line : bg, opacity: disabled ? 0.45 : 1 }, style]}>
+      {loading ? <ActivityIndicator color="#fff" /> : <Text style={[s.btnText, small && { fontSize: 15 }, kind === 'ghost' && { color: colors.text }]}>{title}</Text>}
     </PressScale>
   );
 }
 
-export function Field({ label, ...p }: TextInputProps & { label?: string }) {
+/** Red ! icon and message under a text box. */
+export function FieldError({ text }: { text?: string | null }) {
+  if (!text) return null;
   return (
-    <View style={{ marginBottom: spacing.md }}>
-      {label ? <Text style={s.label}>{label}</Text> : null}
-      <TextInput placeholderTextColor={colors.dim} autoCapitalize="none" {...p} style={[s.input, p.style]} />
+    <View accessibilityRole="alert" accessibilityLiveRegion="polite" style={{ flexDirection: 'row', alignItems: 'flex-start', marginTop: 6 }}>
+      <View style={{ width: 17, height: 17, borderRadius: 9, backgroundColor: colors.danger, alignItems: 'center', justifyContent: 'center', marginRight: 7, marginTop: 1 }}>
+        <Text style={{ color: '#fff', fontSize: 11, fontWeight: '900' }}>!</Text>
+      </View>
+      <Text style={{ flex: 1, color: '#FCA5A5', fontSize: 13, fontWeight: '600', lineHeight: 18 }}>{text}</Text>
     </View>
   );
 }
 
-export function Chip({ label, active, onPress }: { label: string; active?: boolean; onPress: () => void }) {
+/** Message box inside a form or page: error · warning · info · success, with an icon. */
+export function Notice({ tone = 'info', children, style }: { tone?: 'error' | 'warning' | 'info' | 'success'; children: React.ReactNode; style?: ViewStyle }) {
+  const col = tone === 'error' ? colors.danger : tone === 'warning' ? '#F59E0B' : tone === 'success' ? colors.success : colors.primary;
+  const ic = tone === 'success' ? '✓' : tone === 'info' ? 'i' : '!';
   return (
-    <Pressable onPress={onPress} style={[s.chip, active && { backgroundColor: colors.primary, borderColor: colors.primary }]}>
-      <Text style={{ color: active ? '#fff' : colors.dim, fontWeight: '600', fontSize: font.size.sm }}>{label}</Text>
+    <View accessibilityRole={tone === 'error' ? 'alert' : undefined} style={[{ flexDirection: 'row', alignItems: 'flex-start', padding: 12, borderRadius: 14, borderWidth: 1, borderColor: col + '66', backgroundColor: col + '14', marginTop: 12 }, style]}>
+      <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: col, alignItems: 'center', justifyContent: 'center', marginRight: 10, marginTop: 1 }}>
+        <Text style={{ color: '#fff', fontSize: 12, fontWeight: '900' }}>{ic}</Text>
+      </View>
+      <View style={{ flex: 1 }}>{typeof children === 'string' ? <Text style={{ color: colors.text, fontSize: 14, lineHeight: 20 }}>{children}</Text> : children}</View>
+    </View>
+  );
+}
+
+/** Text box with a label; `error` turns it red with the message under it. */
+export function Field({ label, error, ...p }: TextInputProps & { label?: string; error?: string | null }) {
+  const secure = !!p.secureTextEntry;
+  const [shown, setShown] = useState(false);
+  return (
+    <View style={{ marginBottom: spacing.md }}>
+      {label ? <Text style={[s.label, error ? { color: colors.danger } : null]}>{label}</Text> : null}
+      <View>
+        <TextInput placeholderTextColor={colors.dim} autoCapitalize="none" {...p} secureTextEntry={secure && !shown}
+          style={[s.input, p.style, secure ? { paddingRight: 64 } : null, error ? { borderColor: colors.danger, backgroundColor: colors.danger + '0F' } : null]} />
+        {secure ? (
+          <Pressable onPress={() => setShown(!shown)} hitSlop={10} accessibilityRole="button" accessibilityLabel={shown ? 'Hide password' : 'Show password'}
+            style={{ position: 'absolute', right: 0, top: 0, bottom: 0, paddingHorizontal: 14, justifyContent: 'center' }}>
+            <Text style={{ color: colors.primarySoft, fontWeight: '700', fontSize: 14 }}>{shown ? 'Hide' : 'Show'}</Text>
+          </Pressable>
+        ) : null}
+      </View>
+      <FieldError text={error} />
+    </View>
+  );
+}
+
+export function Chip({ label, active, onPress, disabled, style }: { label: string; active?: boolean; onPress: () => void; disabled?: boolean; style?: ViewStyle }) {
+  return (
+    <Pressable onPress={onPress} disabled={disabled} accessibilityRole="button" accessibilityState={{ selected: !!active, disabled: !!disabled }} hitSlop={4}
+      style={[s.chip, active && { backgroundColor: colors.primary, borderColor: colors.primary }, disabled && { opacity: 0.4 }, style]}>
+      {/* simple line breaking + one line: Android otherwise measures emoji labels too narrow and wraps the word out of sight */}
+      <Text numberOfLines={1} textBreakStrategy="simple" style={{ color: active ? '#fff' : colors.dim, fontWeight: '600', fontSize: font.size.sm }}>{label}</Text>
     </Pressable>
   );
 }
@@ -152,7 +284,7 @@ export function Chip({ label, active, onPress }: { label: string; active?: boole
 const tone: Record<string, string> = {
   open: colors.success, won: colors.success, approved: colors.success, verified: colors.success, active: colors.success, confirmed: colors.primary, upcoming: colors.primary,
   paused: colors.amber, pending: colors.amber, pending_confirm: colors.amber, closed: colors.dim, settled: colors.dim,
-  lost: colors.danger, rejected: colors.danger, blocked: colors.danger, refunded: colors.dim, cancelled: colors.dim,
+  lost: colors.danger, rejected: colors.danger, blocked: colors.danger, suspended: colors.danger, refunded: colors.dim, cancelled: colors.dim,
 };
 export function Badge({ text }: { text: string }) {
   const col = tone[text] ?? colors.dim;
@@ -160,10 +292,10 @@ export function Badge({ text }: { text: string }) {
   return <View style={[s.badge, { borderColor: col + '66', backgroundColor: col + '1F' }]}><Text style={{ color: col, fontSize: 10.5, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.4 }}>{label}</Text></View>;
 }
 
-/** LIVE (pulsing), UPCOMING or COMPLETED, derived from the match status. */
+/** OPEN (predictions open today) and LIVE (predictions closed, match being played) pulse; then PAUSED, UPCOMING, COMPLETED. */
 export function MatchStatusBadge({ status, compact }: { status: string; compact?: boolean }) {
   const pulse = useRef(new Animated.Value(1)).current;
-  const live = status === 'open';
+  const live = status === 'open' || status === 'closed';
   useEffect(() => {
     if (!live) return;
     const loop = Animated.loop(Animated.sequence([
@@ -174,8 +306,8 @@ export function MatchStatusBadge({ status, compact }: { status: string; compact?
     return () => loop.stop();
   }, [live]);
   const map: Record<string, { label: string; col: string }> = {
-    open: { label: 'LIVE', col: colors.success }, paused: { label: 'PAUSED', col: colors.amber }, upcoming: { label: 'UPCOMING', col: colors.primarySoft },
-    closed: { label: 'CLOSED', col: colors.dim }, settled: { label: 'COMPLETED', col: colors.dim }, draft: { label: 'DRAFT', col: colors.dim },
+    open: { label: 'OPEN', col: colors.success }, paused: { label: 'PAUSED', col: colors.amber }, upcoming: { label: 'UPCOMING', col: colors.primarySoft },
+    closed: { label: 'LIVE', col: colors.danger }, settled: { label: 'COMPLETED', col: colors.dim }, draft: { label: 'DRAFT', col: colors.dim },
   };
   const m = map[status] ?? { label: status.toUpperCase(), col: colors.dim };
   return (
@@ -338,4 +470,8 @@ export const s = StyleSheet.create({
   empty: { alignItems: 'center', paddingVertical: 28, paddingHorizontal: 20 },
   emptyIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
   shadow: shadow.card as any,
+  topBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: 8, backgroundColor: colors.bg, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.line },
+  backBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line },
+  topTitle: { flex: 1, color: colors.text, fontSize: 17, fontWeight: '800', textAlign: 'center', marginHorizontal: 8, letterSpacing: -0.2 },
+  footer: { paddingHorizontal: spacing.lg, paddingTop: 10, paddingBottom: 10, backgroundColor: colors.bg2, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line },
 });

@@ -1,6 +1,7 @@
 import React from 'react';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { colors } from './theme';
+import { DiamondGem } from './components/Brand';
 
 export interface IconProps { size?: number; color?: string; filled?: boolean }
 const base = (size: number) => ({ width: size, height: size, viewBox: '0 0 24 24', fill: 'none' as const });
@@ -23,12 +24,8 @@ export const UsersIcon = ({ size = 24, color = colors.dim, filled }: IconProps) 
     <Path d="M16 5.6a3.1 3.1 0 0 1 0 5.8M18 14.6c1.8.6 3 2.2 3 4.4" {...stroke(color)} />
   </Svg>
 );
-export const DiamondIcon = ({ size = 24, color = colors.dim, filled }: IconProps) => (
-  <Svg {...base(size)}>
-    <Path d="M7 4h10l4 5.2L12 20 3 9.2 7 4Z" {...stroke(color)} fill={filled ? color : 'none'} fillOpacity={filled ? 0.2 : 0} />
-    <Path d="M3 9.2h18M9.2 4 8 9.2 12 20l4-10.8L14.8 4" {...stroke(color)} />
-  </Svg>
-);
+/** The PickArena diamond is always the faceted brand gem; `color` and `filled` are ignored so the currency looks the same everywhere. */
+export const DiamondIcon = ({ size = 24 }: IconProps) => <DiamondGem size={size} />;
 export const UserIcon = ({ size = 24, color = colors.dim, filled }: IconProps) => (
   <Svg {...base(size)}>
     <Circle cx="12" cy="8.2" r="3.7" {...stroke(color)} fill={filled ? color : 'none'} fillOpacity={filled ? 0.18 : 0} />
@@ -41,7 +38,13 @@ export const PlusIcon = ({ size = 16, color = colors.white }: IconProps) => (
 export const ChevronRightIcon = ({ size = 18, color = colors.dim }: IconProps) => (
   <Svg {...base(size)}><Path d="m9 6 6 6-6 6" {...stroke(color)} /></Svg>
 );
-export const ChevronDownIcon = ({ size = 18, color = colors.dim }: IconProps) => (
+export const ChevronLeftIcon = ({ size = 18, color = colors.dim }: IconProps) => (
+  <Svg {...base(size)}><Path d="m15 6-6 6 6 6" {...stroke(color)} /></Svg>
+);
+export const CheckIcon = ({ size = 16, color = colors.white }: IconProps) => (
+  <Svg {...base(size)}><Path d="m5 12.5 4.5 4.5L19 7.5" stroke={color} strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" /></Svg>
+);
+export const ChevronDownIcon =({ size = 18, color = colors.dim }: IconProps) => (
   <Svg {...base(size)}><Path d="m6 9 6 6 6-6" {...stroke(color)} /></Svg>
 );
 export const CheckBadgeIcon = ({ size = 16, color = colors.primary }: IconProps) => (
@@ -88,3 +91,7 @@ export const LogOutIcon = ({ size = 18, color = colors.danger }: IconProps) => (
 );
 export const ArrowUpIcon = ({ size = 16, color = colors.success }: IconProps) => (<Svg {...base(size)}><Path d="M12 19V5M6 11l6-6 6 6" {...stroke(color)} /></Svg>);
 export const ArrowDownIcon = ({ size = 16, color = colors.danger }: IconProps) => (<Svg {...base(size)}><Path d="M12 5v14M6 13l6 6 6-6" {...stroke(color)} /></Svg>);
+
+export const BellIcon = ({ size = 22, color = colors.text, filled }: IconProps) => (
+  <Svg {...base(size)}><Path d="M6 9a6 6 0 1 1 12 0c0 5 2 6.5 2 6.5H4S6 14 6 9Z" {...stroke(color)} fill={filled ? color : 'none'} fillOpacity={filled ? 0.18 : 0} /><Path d="M10 19a2 2 0 0 0 4 0" {...stroke(color)} /></Svg>
+);

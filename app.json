@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "MatchUp",
+    "name": "PickArena",
     "slug": "matchup-app",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -9,25 +9,34 @@
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
+      "imageWidth": 280,
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#0B1226"
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.matchup.app",
+      "bundleIdentifier": "com.pickarena.app",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIFileSharingEnabled": false,
+        "LSSupportsOpeningDocumentsInPlace": false
       },
       "usesAppleSignIn": true
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#0B1226"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.matchup.app"
+      "package": "com.pickarena.app",
+      "allowBackup": false,
+      "blockedPermissions": [
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -40,10 +49,16 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "MatchUp needs your photos so you can upload your ID for account verification."
+          "photosPermission": "PickArena needs your photos so you can upload your ID for account verification."
         }
       ],
-      "expo-notifications",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#0A84FF"
+        }
+      ],
       "expo-apple-authentication",
       [
         "expo-build-properties",
@@ -59,6 +74,12 @@
         }
       ]
     ],
-    "scheme": "matchup"
+    "scheme": "pickarena",
+    "extra": {
+      "eas": {
+        "projectId": "e84c2546-10f9-468e-af72-70d5ca125e3e"
+      }
+    },
+    "owner": "rezflorendo"
   }
 }
