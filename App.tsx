@@ -10,6 +10,7 @@ import * as Notifications from 'expo-notifications';
 
 import { api } from './src/api';
 import { registerForPush } from './src/push';
+import { openNotification } from './src/pushNav';
 import { clearPending, parseJoinUrl, readPending, savePending } from './src/pending';
 import { useRealtime } from './src/realtime';
 import { useAuth } from './src/store';
@@ -82,15 +83,23 @@ function Session() {
     }, 300);
     return () => clearInterval(t);
   }, []);
+  // A tapped push opens the right screen: while the app is running, in the background, or closed (the tap that started it).
   useEffect(() => {
-    const sub = Notifications.addNotificationResponseReceivedListener((r) => {
+    let handled: string | null = null;
+    const open = (r: Notifications.NotificationResponse | null, tries = 0) => {
+      if (!r) return;
+      const id = r.notification.request.identifier;
+      if (handled === id) return;
+      if (!nav.isReady()) { if (tries < 20) setTimeout(() => open(r, tries + 1), 300); return; }   // just started: wait for the screens
+      handled = id;
       const d: any = r.notification.request.content.data ?? {};
-      if (!nav.isReady()) return;
-      if (d.type === 'match' && d.match_id) nav.navigate('Prediction', { id: Number(d.match_id) });
-      else if (d.type === 'referral') nav.navigate('Referral');
-      else if (d.type === 'diamonds' || d.type === 'wallet') nav.navigate('Diamonds');
-    });
-    return () => sub.remove();
+      openNotification(nav, d.type, d);
+    };
+    Notifications.getLastNotificationResponseAsync().then((r) => open(r)).catch(() => {});
+    const tap = Notifications.addNotificationResponseReceivedListener((r) => open(r));
+    // a push that arrives while the app is open: refresh the bell and the lists it is about
+    const got = Notifications.addNotificationReceivedListener(() => { ['notifications', 'home', 'matches', 'clubs', 'predictions'].forEach((k) => qc.invalidateQueries({ queryKey: [k] })); });
+    return () => { tap.remove(); got.remove(); };
   }, []);
   return null;
 }

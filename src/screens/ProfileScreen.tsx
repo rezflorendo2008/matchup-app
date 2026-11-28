@@ -4,7 +4,7 @@ import { Text, View } from 'react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, errMsg } from '../api';
 import { ORIGIN, POLL_MS } from '../config';
-import { unregisterPush } from '../push';
+import { PushState, openPushSettings, pushState, registerForPush, unregisterPush } from '../push';
 import { useAuth } from '../store';
 import { Button, Card, Dim, NameField, PressScale, Row, Screen, SectionHeader, T, TeamAvatar, VerifiedPill } from '../ui';
 import { BellIcon, ChevronRightIcon, DiamondIcon, HistoryIcon, ShieldIcon, TrophyIcon } from '../icons';
@@ -79,6 +79,22 @@ export default function ProfileScreen({ navigation }: any) {
   const user = useAuth((s) => s.user)!;
   const setUser = useAuth((s) => s.setUser);
   const signOut = useAuth((s) => s.signOut);
+  // notifications on this phone: null while checking
+  const [push, setPush] = useState<PushState | null>(null);
+  useFocusEffect(React.useCallback(() => { let on = true; pushState().then((st) => { if (on) setPush(st); }); return () => { on = false; }; }, []));
+  const onPushRow = async () => {
+    if (push === 'on' || push === 'blocked') {
+      // switching off (or undoing "Don't allow") happens in the phone's settings
+      showAlert(push === 'on' ? 'Notifications are on' : 'Notifications are blocked',
+        push === 'on' ? 'To turn them off, open your phone settings for PickArena.' : "Your phone is blocking PickArena's notifications. Allow them in your phone settings.",
+        [{ text: 'Not now', style: 'cancel' }, { text: 'Open settings', onPress: () => { openPushSettings(); } }]);
+      return;
+    }
+    const st = await registerForPush();
+    setPush(st);
+    if (st === 'on') showAlert('Notifications are on', "You'll be told about wins, diamonds and new matches.");
+    else if (st === 'blocked') showAlert('Notifications are blocked', "Your phone is blocking PickArena's notifications. Allow them in your phone settings.", [{ text: 'Not now', style: 'cancel' }, { text: 'Open settings', onPress: () => { openPushSettings(); } }]);
+  };
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(user.name);
   const [busy, setBusy] = useState(false);
@@ -138,6 +154,18 @@ export default function ProfileScreen({ navigation }: any) {
         <MenuRow icon={<DiamondIcon size={20} color={colors.primarySoft} />} label="My diamonds" onPress={() => navigation.navigate('Diamonds')} />
         <MenuRow icon={<HistoryIcon size={20} color={colors.primarySoft} />} label="Prediction history" onPress={() => navigation.navigate('History')} />
       </Group>
+
+      {/* notifications on this phone: same row as the website's Account → App */}
+      {push !== 'unavailable' ? (
+        <>
+          <SectionHeader title="App" />
+          <Group>
+            <MenuRow icon={<BellIcon size={20} color={push === 'on' ? colors.success : colors.primarySoft} />} label="Notifications on this device"
+              value={push === 'on' ? 'On' : push === 'blocked' ? 'Blocked · open Settings' : push === 'off' ? 'Turn on' : ''} onPress={onPushRow} />
+          </Group>
+          {push === 'on' ? <Dim style={{ marginTop: 8 }}>You'll be told about wins, diamonds, new matches and matches about to start.</Dim> : null}
+        </>
+      ) : null}
 
       <SectionHeader title="Account" />
       {editing ? (
