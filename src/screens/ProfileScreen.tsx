@@ -18,12 +18,21 @@ import { showAlert } from '../dialog';
 import { useFocusEffect } from '@react-navigation/native';
 
 function MenuRow({ icon, label, value, onPress, danger }: { icon: React.ReactNode; label: string; value?: string; onPress: () => void; danger?: boolean }) {
+  // a long value is a hint: it goes under the label, so the label never wraps (same as the website)
+  const hint = !!value && value.length > 18;
   return (
     <PressScale onPress={onPress} scaleTo={0.985} style={{ paddingVertical: 13, paddingHorizontal: 14 }}>
       <Row>
         <View style={{ width: 32, alignItems: 'center', marginRight: 10 }}>{icon}</View>
-        <T style={{ flex: 1, fontWeight: '600', color: danger ? colors.danger : colors.text }}>{label}</T>
-        {value ? <Dim style={{ marginRight: 6, maxWidth: '58%' }} numberOfLines={1}>{value}</Dim> : null}
+        {hint ? (
+          <View style={{ flex: 1 }}>
+            <T style={{ fontWeight: '600', color: danger ? colors.danger : colors.text }}>{label}</T>
+            <Dim style={{ fontSize: 13, marginTop: 2 }}>{value}</Dim>
+          </View>
+        ) : (
+          <T style={{ flex: 1, fontWeight: '600', color: danger ? colors.danger : colors.text }}>{label}</T>
+        )}
+        {value && !hint ? <Dim style={{ marginRight: 6, maxWidth: '58%' }} numberOfLines={1}>{value}</Dim> : null}
         <ChevronRightIcon />
       </Row>
     </PressScale>
