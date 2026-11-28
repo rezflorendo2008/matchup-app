@@ -328,13 +328,13 @@ export default function PredictionScreen({ route, navigation }: any) {
             </Row>
             <Row style={{ backgroundColor: colors.bg2, borderRadius: radius.md, borderWidth: 1.5, borderColor: overMax || overBalance ? colors.danger : amt >= 1 ? colors.primary : colors.line, paddingHorizontal: 14 }}>
               <Text style={{ fontSize: 22 }}>💎</Text>
-              <TextInput ref={amountRef} value={amount} onChangeText={(v) => setAmount(v.replace(/[^0-9.]/g, ''))} keyboardType="decimal-pad" placeholder="0" placeholderTextColor={colors.dim}
+              <TextInput ref={amountRef} value={amount} onChangeText={(v) => setAmount(v.replace(/[^0-9]/g, ''))} keyboardType="number-pad" placeholder="0" placeholderTextColor={colors.dim}
                 accessibilityLabel="Diamonds to predict" returnKeyType="done"
                 style={{ flex: 1, color: colors.text, fontSize: 22, fontWeight: '800', paddingVertical: 10, marginLeft: 10 }} />
               {amount ? <Pressable onPress={() => setAmount('')} hitSlop={10} accessibilityLabel="Clear amount"><Text style={{ color: colors.dim, fontWeight: '700' }}>Clear</Text></Pressable> : null}
             </Row>
             <Row style={{ marginTop: 10, flexWrap: 'wrap', rowGap: 8 }}>
-              {QUICK.map((q) => <Chip key={q} label={String(q)} active={amt === q} disabled={q > limit} onPress={() => setAmount(String(q))} />)}
+              {QUICK.filter((q) => q !== limit).map((q) => <Chip key={q} label={String(q)} active={amt === q} disabled={q > limit} onPress={() => setAmount(String(q))} />)}
               {limit >= 1 && Number.isFinite(limit) ? <Chip label={`Max ${pts(limit)}`} active={amt === limit} onPress={() => setAmount(String(limit))} /> : null}
             </Row>
             {overMax ? <FieldError text={`The most you can use on this match is ${pts(max)} 💎.`} /> : null}
