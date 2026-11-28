@@ -112,7 +112,8 @@ export default function ClubsScreen({ route, navigation }: any) {
               </Card>
               );
             })}
-            <Button title="＋ Join another club" kind="ghost" style={{ marginTop: 4 }} onPress={() => { setCode(''); setFound(null); setCodeErr(null); setShowJoin(true); }} />   {/* a fresh form every time */}
+            {/* a fresh form every time the popup opens */}
+            <Button title="＋ Join another club" kind="ghost" style={{ marginTop: 4 }} onPress={() => { setCode(''); setFound(null); setCodeErr(null); setShowJoin(true); }} />
           </>
         ) : null}
       <Modal visible={showJoin && !hasNone} transparent animationType="slide" onRequestClose={() => setShowJoin(false)}>
