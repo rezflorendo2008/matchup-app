@@ -26,11 +26,17 @@ export function WelcomeBanner({ name, hasClubs, liveCount, onExplore }: { name: 
 export function PromoBanner({ p, width, onPress }: { p: Promo; width: number; onPress: () => void }) {
   return (
     <PressScale onPress={onPress} scaleTo={0.98} style={{ width, marginRight: 10, backgroundColor: colors.card, borderRadius: radius.xl, overflow: 'hidden', borderWidth: 1, borderColor: colors.line }}>
-      {p.image ? <Image source={{ uri: p.image }} style={{ width: '100%', height: 130 }} resizeMode="cover" /> : null}
-      <View style={{ padding: 14 }}>
-        <Text style={{ color: colors.text, fontWeight: '800', fontSize: 17 }}>{p.title}</Text>
-        {p.subtitle ? <Text style={{ color: colors.dim, fontSize: 13, marginTop: 4 }}>{p.subtitle}</Text> : null}
-      </View>
+      {p.image_only && p.image ? (
+        <Image source={{ uri: p.image }} style={{ width: '100%', flex: 1, minHeight: 130, aspectRatio: 2 }} resizeMode="cover" accessibilityLabel={p.title} />
+      ) : (
+        <>
+          {p.image ? <Image source={{ uri: p.image }} style={{ width: '100%', height: 130 }} resizeMode="cover" /> : null}
+          <View style={{ padding: 14 }}>
+            <Text style={{ color: colors.text, fontWeight: '800', fontSize: 17 }}>{p.title}</Text>
+            {p.subtitle ? <Text style={{ color: colors.dim, fontSize: 13, marginTop: 4 }}>{p.subtitle}</Text> : null}
+          </View>
+        </>
+      )}
     </PressScale>
   );
 }
@@ -43,6 +49,9 @@ export function SponsoredBanner({ ad, onPress }: { ad: Promo; onPress: () => voi
         <MegaphoneIcon size={14} color={colors.dim} />
         <Text style={{ color: colors.dim, fontSize: 11, fontWeight: '800', letterSpacing: 0.6, marginLeft: 6 }}>SPONSORED{ad.sponsor ? ` · ${ad.sponsor.toUpperCase()}` : ''}</Text>
       </Row>
+      {ad.image_only && ad.image ? (
+        <Image source={{ uri: ad.image }} style={{ width: '100%', aspectRatio: 2, borderRadius: radius.md, backgroundColor: colors.elevated }} resizeMode="cover" accessibilityLabel={ad.title} />
+      ) : (
       <Row>
         {ad.image ? <Image source={{ uri: ad.image }} style={{ width: 56, height: 56, borderRadius: radius.md, marginRight: 12, backgroundColor: colors.elevated }} /> : null}
         <View style={{ flex: 1 }}>
@@ -50,6 +59,7 @@ export function SponsoredBanner({ ad, onPress }: { ad: Promo; onPress: () => voi
           {ad.subtitle ? <Text style={{ color: colors.dim, fontSize: 12.5, marginTop: 2 }} numberOfLines={2}>{ad.subtitle}</Text> : null}
         </View>
       </Row>
+      )}
     </PressScale>
   );
 }

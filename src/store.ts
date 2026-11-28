@@ -1,8 +1,10 @@
 import { create } from 'zustand';
 import * as SecureStore from 'expo-secure-store';
 import type { User } from './types';
+import { BASE } from './config';
+import { useWelcome } from './welcome';
 
-const KEY = 'matchup.auth';
+const KEY = 'pickarena.auth';
 
 interface AuthState {
   hydrated: boolean; token: string | null; user: User | null;
@@ -23,6 +25,7 @@ export const useAuth = create<AuthState>((set, get) => ({
   },
   setAuth: async (token, user) => {
     set({ token, user });
+    useWelcome.getState().set('login');   // Home says "Welcome back"
     try { await SecureStore.setItemAsync(KEY, JSON.stringify({ token, user })); } catch {}
   },
   setUser: (user) => {
@@ -31,6 +34,9 @@ export const useAuth = create<AuthState>((set, get) => ({
     if (token) SecureStore.setItemAsync(KEY, JSON.stringify({ token, user })).catch(() => {});
   },
   signOut: async () => {
+    // Best effort: also end the login on the server so a copied token stops working.
+    const t = get().token;
+    if (t) fetch(BASE + '/auth/logout', { method: 'POST', headers: { Accept: 'application/json', Authorization: `Bearer ${t}` } }).catch(() => {});
     set({ token: null, user: null });
     try { await SecureStore.deleteItemAsync(KEY); } catch {}
   },
