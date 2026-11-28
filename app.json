@@ -49,7 +49,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "PickArena needs your photos so you can upload your ID for account verification."
+          "photosPermission": "PickArena needs your photos so you can upload your ID for account verification or attach a screenshot to a problem report."
         }
       ],
       [
