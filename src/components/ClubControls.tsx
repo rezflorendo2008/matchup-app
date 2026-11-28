@@ -33,7 +33,8 @@ export function ClubControls({ m, onDone }: { m: Match; onDone: () => void }) {
     <Card style={{ marginTop: 14, borderColor: colors.primary + '66' }}>
       <T style={{ fontWeight: '800' }}>🛠 Club controls</T>
       <Dim style={{ fontSize: 12, marginTop: 2 }}>Only you and your agents see this</Dim>
-      <ScoreEditor m={m} />
+      {/* no score for this sport (boxing): no score controls */}
+      {m.has_score === false ? null : <ScoreEditor m={m} />}
       <Row style={{ marginTop: 12, gap: 8 }}>
         {m.status === 'open' || m.status === 'paused'
           ? <Button style={{ flex: 1 }} small kind="ghost" title="Close predictions" loading={close.isPending} onPress={askClose} />
@@ -117,7 +118,7 @@ function SettleSheet({ m, onClose, onDone }: { m: Match; onClose: () => void; on
   const start = (k: 'a' | 'b') => String(m.score_a != null || m.score_b != null ? Number((k === 'a' ? m.score_a : m.score_b) ?? 0) : 0);
   const [fa, setFa] = useState(start('a'));
   const [fb, setFb] = useState(start('b'));
-  const needScore = !!result && result !== 'cancel';
+  const needScore = !!result && result !== 'cancel' && m.has_score !== false;   // sports without a score (boxing): pick the result, no final score
   const scoresOk = !needScore || (fa !== '' && fb !== '');
   const label: Record<Result, string> = { a: `${m.side_a} won`, b: `${m.side_b} won`, draw: 'it was a draw', cancel: 'the match is cancelled' };
   const pq = useQuery({
