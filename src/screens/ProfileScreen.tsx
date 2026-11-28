@@ -7,22 +7,32 @@ import { ORIGIN, POLL_MS } from '../config';
 import { unregisterPush } from '../push';
 import { useAuth } from '../store';
 import { Button, Card, Dim, NameField, PressScale, Row, Screen, SectionHeader, T, TeamAvatar, VerifiedPill } from '../ui';
-import { BellIcon, ChevronRightIcon, DiamondIcon, HistoryIcon, ShieldIcon, TrophyIcon } from '../icons';
+import { AlertIcon, BellIcon, ChevronRightIcon, DiamondIcon, HistoryIcon, ShieldIcon, TrophyIcon } from '../icons';
 import { colors, radius } from '../theme';
 import type { User } from '../types';
 import { AccountSheet, AccountSheets } from '../components/AccountSheets';
 import { PlayerIdCard } from '../components/PlayerIdCard';
 import { LegalSheet, LegalSlug } from '../components/LegalSheet';
+import { ReportProblemSheet } from '../components/ReportProblemSheet';
 import { showAlert } from '../dialog';
 import { useFocusEffect } from '@react-navigation/native';
 
 function MenuRow({ icon, label, value, onPress, danger }: { icon: React.ReactNode; label: string; value?: string; onPress: () => void; danger?: boolean }) {
+  // a long value is a hint: it goes under the label, so the label never wraps (same as the website)
+  const hint = !!value && value.length > 18;
   return (
     <PressScale onPress={onPress} scaleTo={0.985} style={{ paddingVertical: 13, paddingHorizontal: 14 }}>
       <Row>
         <View style={{ width: 32, alignItems: 'center', marginRight: 10 }}>{icon}</View>
-        <T style={{ flex: 1, fontWeight: '600', color: danger ? colors.danger : colors.text }}>{label}</T>
-        {value ? <Dim style={{ marginRight: 6, maxWidth: '58%' }} numberOfLines={1}>{value}</Dim> : null}
+        {hint ? (
+          <View style={{ flex: 1 }}>
+            <T style={{ fontWeight: '600', color: danger ? colors.danger : colors.text }}>{label}</T>
+            <Dim style={{ fontSize: 13, marginTop: 2 }}>{value}</Dim>
+          </View>
+        ) : (
+          <T style={{ flex: 1, fontWeight: '600', color: danger ? colors.danger : colors.text }}>{label}</T>
+        )}
+        {value && !hint ? <Dim style={{ marginRight: 6, maxWidth: '58%' }} numberOfLines={1}>{value}</Dim> : null}
         <ChevronRightIcon />
       </Row>
     </PressScale>
@@ -84,6 +94,7 @@ export default function ProfileScreen({ navigation }: any) {
   const [busy, setBusy] = useState(false);
   const [sheet, setSheet] = useState<AccountSheet>(null);
   const [legal, setLegal] = useState<LegalSlug | null>(null);
+  const [report, setReport] = useState(false);   // Report a problem sheet
   // Keep the badge fresh: an owner may have verified this account since the app last loaded it.
   const me = useQuery({ queryKey: ['me'], queryFn: () => api.get<User>('/me'), refetchInterval: POLL_MS });
   // fresh on every visit: the owner may have changed things (verification, Refer & earn) since
@@ -166,6 +177,11 @@ export default function ProfileScreen({ navigation }: any) {
       {!editing && nextChange ? <Dim style={{ marginTop: 8 }}>Next display name change: {nextChange.toLocaleDateString([], { month: 'long', day: 'numeric' })}</Dim> : null}
       {user.is_owner ? <Dim style={{ marginTop: 8 }}>Manage matches, members and diamonds at {ORIGIN}/owner</Dim> : null}
 
+      <SectionHeader title="Help" />
+      <Group>
+        <MenuRow icon={<AlertIcon size={20} color={colors.primarySoft} />} label="Report a problem" value="Bugs, matches, diamonds, account" onPress={() => setReport(true)} />
+      </Group>
+
       <SectionHeader title="About" />
       <Group>
         <MenuRow icon={<ShieldIcon size={20} color={colors.primarySoft} />} label="Privacy policy" onPress={() => setLegal('privacy')} />
@@ -181,6 +197,7 @@ export default function ProfileScreen({ navigation }: any) {
       <Dim style={{ textAlign: 'center', marginTop: 12, fontSize: 12 }}>PickArena {appVersion()}</Dim>
       <AccountSheets open={sheet} onClose={() => setSheet(null)} />
       <LegalSheet slug={legal} onClose={() => setLegal(null)} />
+      <ReportProblemSheet open={report} onClose={() => setReport(false)} />
     </Screen>
   );
 }
