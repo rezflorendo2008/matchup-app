@@ -6,6 +6,7 @@
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
+    "ios:trust-herd": "xcrun simctl keychain booted add-root-cert \"$HOME/Library/Application Support/Herd/config/valet/CA/LaravelValetCASelfSigned.pem\" && echo 'Herd certificate trusted in the booted simulator'",
     "web": "expo start --web"
   },
   "dependencies": {
