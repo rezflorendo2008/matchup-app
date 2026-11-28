@@ -45,11 +45,16 @@ export function ClubControls({ m, onDone }: { m: Match; onDone: () => void }) {
   );
 }
 
-/** Live score: each tap saves straight away; players see it on their next refresh. */
+/** Basketball (also NBA / PBA categories and events): points come in 2s and 3s, so those get their own buttons. */
+const isBasketball = (m: Match) => /basket|\bnba\b|\bpba\b/i.test(`${m.category ?? ''} ${m.event ?? ''}`);
+
+/** Live score: type the number or tap the buttons. Every change saves straight away; players see it on their next refresh (same as the website). */
 function ScoreEditor({ m }: { m: Match }) {
   const [score, setScore] = useState({ a: Number(m.score_a ?? 0), b: Number(m.score_b ?? 0) });
-  const [note, setNote] = useState('Tap + or − to update the score. Players see it live.');
+  const [typing, setTyping] = useState<{ k: 'a' | 'b'; text: string } | null>(null);   // the box being typed in
+  const [note, setNote] = useState('Type the score or tap the buttons. Players see it live.');
   const pending = useRef(0), seq = useRef(0);
+  const hoops = isBasketball(m);
   // follow changes made elsewhere (another agent, the owner console) unless a save of ours is on its way
   useEffect(() => { if (pending.current === 0) setScore({ a: Number(m.score_a ?? 0), b: Number(m.score_b ?? 0) }); }, [m.score_a, m.score_b]);
   const save = async (next: { a: number; b: number }) => {
@@ -58,30 +63,49 @@ function ScoreEditor({ m }: { m: Match }) {
     catch (e) { if (mine === seq.current) setNote(errMsg(e)); }
     finally { pending.current--; }
   };
-  const step = (k: 'a' | 'b', d: number) => {
-    const n = Math.max(0, Math.min(999, score[k] + d));
+  const set = (k: 'a' | 'b', value: number) => {
+    const n = Math.max(0, Math.min(999, value));
     if (n === score[k]) return;
     const next = { ...score, [k]: n }; setScore(next); save(next);
   };
-  const btn = (k: 'a' | 'b', d: number) => (
-    <Pressable onPress={() => step(k, d)} disabled={d < 0 && score[k] <= 0} hitSlop={4} accessibilityRole="button"
-      accessibilityLabel={`${k === 'a' ? m.side_a : m.side_b} ${d < 0 ? 'minus' : 'plus'} one`}
-      style={({ pressed }) => ({ width: 42, height: 42, borderRadius: radius.md, borderWidth: 1, borderColor: colors.line, backgroundColor: pressed ? colors.bg2 : colors.card,
-        alignItems: 'center', justifyContent: 'center', opacity: d < 0 && score[k] <= 0 ? 0.35 : 1 })}>
-      <Text style={{ color: colors.text, fontSize: 20, fontWeight: '800' }}>{d < 0 ? '−' : '+'}</Text>
-    </Pressable>
-  );
+  // typed: saved when you leave the box or press Done (an empty box goes back to the last score)
+  const commit = () => { if (!typing) return; if (typing.text !== '') set(typing.k, Number(typing.text)); setTyping(null); };
+  const btn = (k: 'a' | 'b', d: number) => {
+    const off = d < 0 && score[k] <= 0, big = Math.abs(d) > 1;
+    return (
+      <Pressable onPress={() => { setTyping(null); set(k, score[k] + d); }} disabled={off} hitSlop={4} accessibilityRole="button"
+        accessibilityLabel={`${k === 'a' ? m.side_a : m.side_b} ${d < 0 ? 'minus' : 'plus'} ${['one', 'two', 'three'][Math.abs(d) - 1]}`}
+        style={({ pressed }) => ({ width: big ? 46 : 42, height: 42, borderRadius: radius.md, borderWidth: 1, borderColor: colors.line, backgroundColor: pressed ? colors.bg2 : colors.card,
+          alignItems: 'center', justifyContent: 'center', opacity: off ? 0.35 : 1 })}>
+        <Text style={{ color: big ? colors.primarySoft : colors.text, fontSize: big ? 15 : 20, fontWeight: '800' }}>{d < 0 ? '−' : big ? `+${d}` : '+'}</Text>
+      </Pressable>
+    );
+  };
   return (
     <View style={{ marginTop: 12, padding: 12, borderRadius: radius.md, backgroundColor: colors.bg2, borderWidth: 1, borderColor: colors.line }}>
       <T style={{ fontWeight: '800', marginBottom: 6 }}>Score</T>
-      {(['a', 'b'] as const).map((k) => (
-        <Row key={k} style={{ paddingVertical: 4 }}>
-          <Text style={{ flex: 1, color: k === 'a' ? c.a : c.b, fontWeight: '700' }} numberOfLines={1}>{k === 'a' ? m.side_a : m.side_b}</Text>
-          {btn(k, -1)}
-          <Text accessibilityLiveRegion="polite" style={{ minWidth: 48, textAlign: 'center', color: colors.text, fontSize: 22, fontWeight: '800' }}>{score[k]}</Text>
-          {btn(k, 1)}
-        </Row>
-      ))}
+      {(['a', 'b'] as const).map((k) => {
+        const name = k === 'a' ? m.side_a : m.side_b;
+        const on = typing?.k === k;
+        const nameEl = <Text style={{ flex: hoops ? undefined : 1, color: k === 'a' ? c.a : c.b, fontWeight: '700', marginBottom: hoops ? 6 : 0 }} numberOfLines={1}>{name}</Text>;
+        return (
+          <View key={k} style={{ paddingVertical: hoops ? 6 : 4 }}>
+            {hoops ? nameEl : null}
+            <Row style={{ gap: 8 }}>
+              {hoops ? null : nameEl}
+              {btn(k, -1)}
+              <TextInput value={on ? typing!.text : String(score[k])} keyboardType="number-pad" maxLength={3} selectTextOnFocus returnKeyType="done"
+                onFocus={() => setTyping({ k, text: String(score[k]) })} onChangeText={(v) => setTyping({ k, text: v.replace(/\D/g, '').slice(0, 3) })}
+                onBlur={commit} onSubmitEditing={commit} accessibilityLabel={`${name} score`}
+                style={{ flex: hoops ? 1 : undefined, minWidth: 64, height: 42, textAlign: 'center', color: colors.text, fontSize: 22, fontWeight: '800', paddingVertical: 0, paddingHorizontal: 4,
+                  backgroundColor: colors.card, borderWidth: 1, borderColor: on ? colors.primary : colors.line, borderRadius: radius.md }} />
+              {btn(k, 1)}
+              {hoops ? btn(k, 2) : null}
+              {hoops ? btn(k, 3) : null}
+            </Row>
+          </View>
+        );
+      })}
       <Dim style={{ fontSize: 12, marginTop: 4 }}>{note}</Dim>
     </View>
   );
